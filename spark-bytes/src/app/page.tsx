@@ -338,6 +338,7 @@ export default function Home() {
                             objectFit: "cover",
                           }}
                         />
+                        
                       </div>
                     }
                     style={{
