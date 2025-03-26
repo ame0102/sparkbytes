@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 export default function LoginPage() {
+  // State management for authentication and UI
   const [formMode, setFormMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,8 +11,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
-  // Handle form submission
+  /**
+   * Handles form submission for login and signup
+   * Validates BU email domain for signup process
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -35,7 +40,9 @@ export default function LoginPage() {
     }
   };
 
-  // Handle BU SSO authentication
+  /**
+   * Handles Boston University Single Sign-On authentication
+   */
   const handleBUAuth = async () => {
     setLoading(true);
     try {
@@ -48,15 +55,30 @@ export default function LoginPage() {
     }
   };
 
-  // Handle logout
+  /**
+   * Enables guest mode with limited access
+   */
+  const handleGuestAccess = () => {
+    setIsGuestMode(true);
+  };
+
+  /**
+   * Handles user logout and guest mode exit
+   * Resets all auth-related state variables
+   */
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setIsGuestMode(false);
     setEmail('');
     setPassword('');
     setName('');
   };
 
-  if (isLoggedIn) {
+  /**
+   * Renders the main application content for authenticated and guest users
+   * Displays different UI and data based on authentication status
+   */
+  const renderMainContent = () => {
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <header className="bg-white border-b border-gray-100 py-4 px-6">
@@ -65,41 +87,157 @@ export default function LoginPage() {
               <div className="h-8 w-8 bg-[#CC0000] rounded-full"></div>
               <h1 className="text-xl font-semibold text-gray-800">Spark! Bytes</h1>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="text-[#CC0000] hover:text-[#A00000] font-medium transition-colors"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-4">
+              {isGuestMode && (
+                <button 
+                  className="text-gray-600 hover:text-[#CC0000] font-medium transition-colors bg-gray-100 px-4 py-1.5 rounded-full text-sm"
+                >
+                  Sign Up
+                </button>
+              )}
+              <button 
+                onClick={handleLogout}
+                className="text-[#CC0000] hover:text-[#A00000] font-medium transition-colors"
+              >
+                {isGuestMode ? "Exit Guest Mode" : "Sign Out"}
+              </button>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 w-full max-w-md p-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#CC0000]" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
+        <main className="flex-1 p-6">
+          <div className="max-w-5xl mx-auto">
+            {isGuestMode && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="text-amber-500 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-amber-800 text-sm">You're browsing as a guest</h3>
+                    <p className="text-amber-700 text-xs mt-1">Some features are limited. Sign in with your BU account for full access.</p>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">Welcome to Spark! Bytes</h2>
-              <p className="text-gray-500 mt-2">You're now logged in with your BU account</p>
+            )}
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Upcoming Events</h2>
+              
+              {isGuestMode ? (
+                <div className="space-y-4">
+                  {/* Limited event listings for guest mode */}
+                  <EventCard 
+                    title="Tech Talk with Free Pizza" 
+                    date="Tomorrow, 5:30 PM"
+                    location="Photonics Center, Room 206"
+                    food="Pizza & Soda"
+                    limited={true}
+                  />
+                  <EventCard 
+                    title="Engineering Mixer" 
+                    date="March 28, 6:00 PM"
+                    location="EMA Building, Floor 3"
+                    food="Catered Buffet"
+                    limited={true}
+                  />
+                  <EventCard 
+                    title="Community Service Day" 
+                    date="April 2, 10:00 AM"
+                    location="GSU Plaza"
+                    food="Bagels & Coffee"
+                    limited={true}
+                  />
+                  
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="text-center">
+                      <p className="text-gray-500 text-sm mb-3">Sign in to see more events and RSVP</p>
+                      <button 
+                        onClick={handleLogout}
+                        className="inline-flex items-center justify-center bg-[#CC0000] hover:bg-[#A00000] text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors"
+                      >
+                        Sign In for Full Access
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Full event listings for logged in users */}
+                  <EventCard 
+                    title="Tech Talk with Free Pizza" 
+                    date="Tomorrow, 5:30 PM"
+                    location="Photonics Center, Room 206"
+                    food="Pizza & Soda"
+                  />
+                  <EventCard 
+                    title="Engineering Mixer" 
+                    date="March 28, 6:00 PM"
+                    location="EMA Building, Floor 3"
+                    food="Catered Buffet"
+                  />
+                  <EventCard 
+                    title="Community Service Day" 
+                    date="April 2, 10:00 AM"
+                    location="GSU Plaza"
+                    food="Bagels & Coffee"
+                  />
+                  <EventCard 
+                    title="Research Symposium" 
+                    date="April 5, 3:00 PM"
+                    location="Life Sciences Building"
+                    food="Assorted Sandwiches"
+                  />
+                  <EventCard 
+                    title="Startup Competition Finals" 
+                    date="April 10, 4:00 PM"
+                    location="Questrom Auditorium"
+                    food="Full Catering"
+                  />
+                </div>
+              )}
             </div>
-            
-            <div className="bg-[#FFF5F5] border border-[#FFDFDF] p-4 rounded-md mb-6">
-              <p className="text-[#CC0000] text-sm font-medium">Your session is active. You now have access to all Spark! Bytes features.</p>
-            </div>
-            
-            <button 
-              onClick={handleLogout}
-              className="w-full bg-[#CC0000] hover:bg-[#A00000] text-white py-3 rounded-lg font-medium transition-colors"
-            >
-              Sign Out
-            </button>
           </div>
         </main>
       </div>
     );
+  };
+
+  /**
+   * Renders an individual event card with optional limited functionality for guest users
+   * @param title - Event title
+   * @param date - Event date and time
+   * @param location - Event location
+   * @param food - Food being offered
+   * @param limited - Whether to show limited version (for guests)
+   */
+  const EventCard = ({ title, date, location, food, limited = false }) => {
+    return (
+      <div className={`p-4 rounded-lg border ${limited ? 'border-gray-100' : 'border-gray-200'} hover:border-gray-300 transition-colors`}>
+        <div className="flex justify-between">
+          <div>
+            <h3 className="font-medium text-gray-800">{title}</h3>
+            <p className="text-gray-500 text-sm mt-1">{date} • {location}</p>
+            <div className="flex items-center gap-1 mt-2">
+              <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                {food}
+              </span>
+            </div>
+          </div>
+          {!limited && (
+            <button className="flex-shrink-0 text-[#CC0000] hover:text-[#A00000] text-sm font-medium">
+              RSVP
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoggedIn || isGuestMode) {
+    return renderMainContent();
   }
 
   return (
@@ -234,6 +372,18 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+              <button 
+                onClick={handleGuestAccess}
+                className="text-[#CC0000] hover:text-[#A00000] text-sm font-medium"
+              >
+                Continue as Guest
+              </button>
+              <p className="text-xs text-gray-500 mt-1">
+                Limited access to view upcoming events
+              </p>
+            </div>
           </div>
         </div>
 
