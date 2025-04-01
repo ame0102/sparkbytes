@@ -98,10 +98,10 @@ export default function Home() {
 
   // Filter events based on search and filters
   const filteredEvents = allEvents.filter((event) => {
-    // Search filter
-    // const matchesSearch =
-    //   event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    //   event.location.toLowerCase().includes(searchQuery.toLowerCase());
+    //user's search
+    const matchesSearch =
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchQuery.toLowerCase());
 
     // dietary filter
     const matchesDietary =
@@ -112,7 +112,7 @@ export default function Home() {
     const matchesCategory =
       selectedCategory === "All" || event.category === selectedCategory;
 
-    return matchesDietary && matchesCategory;
+    return matchesSearch && matchesDietary && matchesCategory;
   });
 
   const handleLogin = () => {
@@ -167,7 +167,7 @@ export default function Home() {
               style={{
                 color: "#fff",
                 cursor: "pointer",
-                fontWeight: "500",
+                fontWeight: "900",
                 fontSize: "16px",
               }}
               onClick={() => router.push("/")}
@@ -188,7 +188,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right side - Search and user */}
         <div style={{ display: "flex", alignItems: "center" }}>
           <Input
             placeholder="Search"
@@ -198,6 +197,10 @@ export default function Home() {
               marginRight: "20px",
               borderRadius: "20px",
             }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            // onPressEnter={() => console.log("Search triggered:", searchQuery)}
           />
 
           {isLoggedIn ? (
@@ -371,7 +374,7 @@ export default function Home() {
                       boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                       transition: "transform 0.3s ease",
                     }}
-                    bodyStyle={{ padding: "16px" }}
+                    // bodyStyle={{ padding: "16px" }}
                   >
                     <Meta
                       title={
@@ -453,17 +456,22 @@ export default function Home() {
               }}
             >
               <h3 style={{ color: "#888", marginBottom: "16px" }}>
-                No events match your filters
+                Sorry, no events found.
               </h3>
               <Button
                 type="primary"
+                style={{
+                  backgroundColor: "#b22222",
+                  borderColor: "#b22222",
+                  color: "#fff",
+                }}
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedDietary([]);
                   setSelectedCategory("All");
                 }}
               >
-                Clear Filters
+                Clear All Filters
               </Button>
             </div>
           )}
