@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { supabase } from '@/utils/supabaseClient';
 
 export default function LoginPage() {
   // State management for authentication and UI
@@ -16,44 +17,59 @@ export default function LoginPage() {
   /**
    * Handles form submission for login and signup
    * Validates BU email domain for signup process
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+   */const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    // Validate BU email for signup
-    if (formMode === 'signup' && !email.endsWith('@bu.edu')) {
-      setError('Please use a valid BU email address (@bu.edu)');
-      setLoading(false);
-      return;
+  if (formMode === 'signup' && !email.endsWith('@bu.edu')) {
+    setError('Please use a valid BU email address (@bu.edu)');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    let result;
+    if (formMode === 'signup') {
+      result = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
+    } else {
+      result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
     }
 
-    try {
-      // Simulate authentication
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setIsLoggedIn(true);
-    } catch (err) {
-      setError('Authentication failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const { error: authError } = result;
+    if (authError) throw authError;
+
+    setIsLoggedIn(true);
+  } catch (err: any) {
+    setError(err.message || 'Authentication failed.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   /**
    * Handles Boston University Single Sign-On authentication
-   */
-  const handleBUAuth = async () => {
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setIsLoggedIn(true);
-    } catch (err) {
-      setError('BU authentication failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+   */const handleBUAuth = async () => {
+  setLoading(true);
+  try {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) throw error;
+    setError("Check your BU email for a login link.");
+  } catch (err: any) {
+    setError(err.message || 'BU authentication failed.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   /**
    * Enables guest mode with limited access
@@ -65,14 +81,14 @@ export default function LoginPage() {
   /**
    * Handles user logout and guest mode exit
    * Resets all auth-related state variables
-   */
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setIsGuestMode(false);
-    setEmail('');
-    setPassword('');
-    setName('');
-  };
+   */const handleLogout = async () => {
+  await supabase.auth.signOut();
+  setIsLoggedIn(false);
+  setIsGuestMode(false);
+  setEmail('');
+  setPassword('');
+  setName('');
+};
 
   /**
    * Renders the main application content for authenticated and guest users
@@ -213,7 +229,16 @@ export default function LoginPage() {
    * @param food - Food being offered
    * @param limited - Whether to show limited version (for guests)
    */
-  const EventCard = ({ title, date, location, food, limited = false }) => {
+
+  type EventCardProps = {
+    title: string;
+    date: string;
+    location: string;
+    food: string;
+    limited?: boolean;
+  };
+
+  const EventCard = ({ title, date, location, food, limited = false }: EventCardProps) => {
     return (
       <div className={`p-4 rounded-lg border ${limited ? 'border-gray-100' : 'border-gray-200'} hover:border-gray-300 transition-colors`}>
         <div className="flex justify-between">

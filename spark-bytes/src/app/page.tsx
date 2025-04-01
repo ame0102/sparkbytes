@@ -93,6 +93,8 @@ export default function Home() {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [userName, setUserName] = useState<string>("User");
+
 
   // Filter events based on search and filters
   const filteredEvents = allEvents.filter((event) => {
