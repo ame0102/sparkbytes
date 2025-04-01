@@ -202,10 +202,7 @@ export default function GuestPage() {
       setSelectedDietary([...selectedDietary, option]);
     }
   };
-
-  /**
-   * Render an individual event card with selection functionality
-   *//**
+  /*
    * Render an individual event card with selection functionality
    */
   const EventCard = ({ event }: { event: typeof events[0] }) => {
