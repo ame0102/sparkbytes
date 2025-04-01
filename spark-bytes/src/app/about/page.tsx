@@ -127,7 +127,7 @@ export default function AboutPage() {
               marginBottom: "24px",
             }}
           >
-            About Us
+            About Us.
           </h1>
           <div
             style={{
