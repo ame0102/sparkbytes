@@ -36,7 +36,7 @@ const allEvents = [
     location: "Howard Thurman Center",
     time: "7:00pm EST",
     dietary: ["Gluten free", "Vegetarian"],
-    image: "../../public/HTC.jpg",
+    image: "HTC.jpg",
     spotsLeft: 20,
     category: "Social",
   },
@@ -47,7 +47,7 @@ const allEvents = [
     location: "College of Arts and Sciences",
     time: "6:30pm EST",
     dietary: ["Vegetarian", "Vegan options"],
-    image: "../../public/CAS.jpg",
+    image: "CAS.jpg",
     spotsLeft: 15,
     category: "Academic",
   },
@@ -58,7 +58,7 @@ const allEvents = [
     location: "Engineering Building",
     time: "5:00pm EST",
     dietary: ["Gluten free", "Dairy free"],
-    image: "../../public/ENG.jpg",
+    image: "ENG.jpg",
     spotsLeft: 10,
     category: "Tech",
   },
@@ -69,7 +69,7 @@ const allEvents = [
     location: "School of Hospitality",
     time: "7:30pm EST",
     dietary: ["Vegetarian", "Gluten free", "Nut free"],
-    image: "../../public/SHA.jpg",
+    image: "SHA.jpg",
     spotsLeft: 8,
     category: "Professional",
   },
@@ -140,7 +140,7 @@ export default function Home() {
       {/* Header */}
       <Header
         style={{
-          backgroundColor: "#b22222",
+          backgroundColor: "#CC0000",
           padding: "0 50px",
           display: "flex",
           alignItems: "center",
@@ -246,12 +246,33 @@ export default function Home() {
               marginBottom: "10px",
             }}
           >
-            Welcome to <span style={{ color: "#b22222" }}>Spark! Bytes</span>
+            Welcome to <span style={{ color: "#CC0000" }}>Spark! Bytes</span>
           </h1>
           <p style={{ fontSize: "16px", lineHeight: "1.8", maxWidth: "800px" }}>
             Discover events offering free food around the Boston University
             campus with different dietary options.
           </p>
+        </div>
+
+        {/* Create Event Button */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "16px",
+          }}
+        >
+          <Button
+            type="primary"
+            style={{
+              backgroundColor: "#CC0000",
+              fontWeight: "bold",
+              borderRadius: "8px",
+            }}
+            onClick={() => router.push("/event")}
+          >
+            + Create Event
+          </Button>
         </div>
 
         {/* Events Section */}
@@ -265,6 +286,7 @@ export default function Home() {
             }}
           >
             <h2 style={{ fontSize: "24px", fontWeight: "bold" }}>Top Events</h2>
+            
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <span style={{ color: "#888" }}>
                 {filteredEvents.length}{" "}
@@ -392,15 +414,15 @@ export default function Home() {
                             }}
                           >
                             <span
-                              style={{ color: "#b22222", fontWeight: "500" }}
+                              style={{ color: "#CC0000", fontWeight: "500" }}
                             >
                               {event.spotsLeft} spots left
                             </span>
                             <Button
                               type="primary"
                               style={{
-                                backgroundColor: "#b22222",
-                                borderColor: "#b22222",
+                                backgroundColor: "#CC0000",
+                                borderColor: "#CC0000",
                               }}
                               onClick={() => {
                                 if (!isLoggedIn) {
@@ -467,8 +489,8 @@ export default function Home() {
             type="primary"
             onClick={() => setIsFilterModalOpen(false)}
             style={{
-              backgroundColor: "#b22222",
-              borderColor: "#b22222",
+              backgroundColor: "#CC0000",
+              borderColor: "#CC0000",
             }}
           >
             Apply Filters
