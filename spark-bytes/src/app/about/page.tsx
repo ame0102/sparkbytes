@@ -36,7 +36,7 @@ export default function AboutPage() {
     <Layout style={{ backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
       <Header
         style={{
-          backgroundColor: "#b22222",
+          backgroundColor: "#CC0000",
           padding: "0 50px",
           display: "flex",
           alignItems: "center",
@@ -144,10 +144,10 @@ export default function AboutPage() {
                 marginBottom: "16px",
               }}
             >
-              <strong>Spark! Bytes</strong> was created for students at Boston University to find
-              free food events on campus.
-              Developed by a team of Spark! students passionate about solving
-              real-world problems through technology.
+              <strong>Spark! Bytes</strong> was created for students at Boston
+              University to find free food events on campus. Developed by a team
+              of Spark! students passionate about solving real-world problems
+              through technology.
             </p>
           </div>
         </div>
