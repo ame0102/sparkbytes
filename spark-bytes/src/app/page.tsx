@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Layout,
-  Menu,
-  Input,
-  Card,
-  Button,
-  Row,
-  Col,
-  Avatar,
-  Dropdown,
-  Select,
-  Tag,
-  Modal,
-} from "antd";
+import React, { useState, useEffect } from "react";
+import { message } from "antd";
+import Layout from "antd/lib/layout";
+import Menu from "antd/lib/menu";
+import Input from "antd/lib/input";
+import Card from "antd/lib/card";
+import Button from "antd/lib/button";
+import Row from "antd/lib/row";
+import Col from "antd/lib/col";
+import Avatar from "antd/lib/avatar";
+import Dropdown from "antd/lib/dropdown";
+import Select from "antd/lib/select";
+import Tag from "antd/lib/tag";
+import Modal from "antd/lib/modal";
 import {
   SearchOutlined,
   UserOutlined,
@@ -22,6 +21,9 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import CreateEventModal from "../components/CreateEventModal";
+import { getAllEvents, getCurrentUser } from "@/utils/eventApi";
+import { supabase } from "@/utils/supabaseClient";
 
 const { Header, Content } = Layout;
 const { Meta } = Card;
@@ -93,11 +95,88 @@ export default function Home() {
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userName, setUserName] = useState<string>("User");
+  const [events, setEvents] = useState(allEvents); // Start with mock data, will be updated
+  const [loading, setLoading] = useState(true);
 
+  // Check user authentication status on load
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setIsLoggedIn(true);
+          
+          // Get user profile info
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+            
+          if (data?.full_name) {
+            setUserName(data.full_name);
+          } else {
+            setUserName(user.email?.split('@')[0] || 'User');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+      }
+    };
+    
+    checkUser();
+  }, []);
+  
+  // Fetch events from the database
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        // Check if Supabase is configured properly
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          setEvents(allEvents); // Fallback to mock data
+          message.info('Using mock data - database not connected');
+          return;
+        }
+        
+        const data = await getAllEvents();
+        if (data && data.length > 0) {
+          setEvents(data);
+        } else {
+          // If no events found, use mock data
+          console.log('No events found in database, using mock data');
+          setEvents(allEvents);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        // Fallback to mock data on error
+        setEvents(allEvents);
+        message.info('Failed to load events from database - using mock data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchEvents();
+  }, []);
+  
+  // Refresh events after creating a new one
+  const handleEventCreated = async () => {
+    try {
+      const data = await getAllEvents();
+      if (data) {
+        setEvents(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing events:', error);
+    }
+  };
 
   // Filter events based on search and filters
-  const filteredEvents = allEvents.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     //user's search
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,16 +203,19 @@ export default function Home() {
     router.push("/login");
   };
 
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" onClick={() => router.push("/profile")}>
-        My Profile
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
-        Logout
-      </Menu.Item>
-    </Menu>
-  );
+  const userMenuItems = [
+    {
+      key: 'profile',
+      label: 'My Profile',
+      onClick: () => router.push("/profile")
+    },
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: <LogoutOutlined />,
+      onClick: handleLogout
+    }
+  ];
 
   return (
     <Layout style={{ backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
@@ -190,6 +272,7 @@ export default function Home() {
 
         <div style={{ display: "flex", alignItems: "center" }}>
           <Input
+            id="search-input"
             placeholder="Search"
             prefix={<SearchOutlined />}
             style={{
@@ -198,13 +281,24 @@ export default function Home() {
               borderRadius: "20px",
             }}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             allowClear
-            // onPressEnter={() => console.log("Search triggered:", searchQuery)}
           />
 
           {isLoggedIn ? (
-            <Dropdown overlay={userMenu} placement="bottomRight">
+            <Dropdown 
+              overlay={
+                <Menu>
+                  <Menu.Item key="profile" onClick={() => router.push("/profile")}>
+                    My Profile
+                  </Menu.Item>
+                  <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
+                    Logout
+                  </Menu.Item>
+                </Menu>
+              } 
+              placement="bottomRight"
+            >
               <div
                 style={{
                   cursor: "pointer",
@@ -223,14 +317,14 @@ export default function Home() {
           ) : (
             <Button
               type="text"
+              icon={<UserOutlined />}
+              onClick={handleLogin}
               style={{
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
               }}
-              icon={<UserOutlined />}
-              onClick={handleLogin}
             >
               Login
             </Button>
@@ -272,10 +366,24 @@ export default function Home() {
               fontWeight: "bold",
               borderRadius: "8px",
             }}
-            onClick={() => router.push("/event")}
+            onClick={() => {
+              if (isLoggedIn) {
+                setIsCreateModalOpen(true);
+              } else {
+                message.info('Please log in to create an event');
+                router.push("/login");
+              }
+            }}
           >
             + Create Event
           </Button>
+          
+          {/* Create Event Modal */}
+          <CreateEventModal 
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onEventCreated={handleEventCreated}
+          />
         </div>
 
         {/* Events Section */}
@@ -374,7 +482,6 @@ export default function Home() {
                       boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                       transition: "transform 0.3s ease",
                     }}
-                    // bodyStyle={{ padding: "16px" }}
                   >
                     <Meta
                       title={
@@ -479,7 +586,7 @@ export default function Home() {
       </Content>
       <Modal
         title="Filter Events"
-        open={isFilterModalOpen}
+        visible={isFilterModalOpen}
         onOk={() => setIsFilterModalOpen(false)}
         onCancel={() => setIsFilterModalOpen(false)}
         footer={[
