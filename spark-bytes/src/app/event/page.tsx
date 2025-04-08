@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreateEventPage() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
@@ -77,12 +79,22 @@ export default function CreateEventPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-[#CC0000] hover:bg-[#A00000] text-white py-2.5 rounded-lg font-medium transition-colors"
-          >
-            Create Event
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="submit"
+              className="w-full bg-[#CC0000] hover:bg-[#A00000] text-white py-2.5 rounded-lg font-medium transition-colors"
+            >
+              Create Event
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="w-full text-gray-500 underline text-sm font-medium hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     </div>
