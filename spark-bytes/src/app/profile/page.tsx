@@ -1,84 +1,99 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/utils/supabaseClient";
+import { useRouter } from "next/navigation";
+import { Layout, Button, Avatar, Dropdown, Menu } from "antd";
 
-//used chat for eorror handling/logic check 
 export default function ProfilePage() {
-  const [name, setName] = useState("John Doe");
-  const [email, setEmail] = useState("johndoe@bu.edu");
-  const [bio, setBio] = useState("Boston University student, tech enthusiast.");
-  const [profilePic, setProfilePic] = useState("https://via.placeholder.com/150");
-  const [phone, setPhone] = useState("123-456-7890");
-  const [location, setLocation] = useState("Boston, MA");
-  const [website, setWebsite] = useState("https://johndoe.dev");
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    bio: "",
+    phone: "",
+    location: "",
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      console.error("error: name is empty");
-      return;
-    }
-    if (!bio.trim()) {
-      console.error("error: bio is empty");
-      return;
-    }
-    if (!phone.match(/^\d{3}-\d{3}-\d{4}$/)) {
-      console.error("error: phone format invalid");
-      return;
-    }
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        setFormData({
+          name: user.user_metadata?.name || "",
+          email: user.email || "",
+          bio: user.user_metadata?.bio || "",
+          phone: user.user_metadata?.phone || "",
+          location: user.user_metadata?.location || "",
+        });
+      } else {
+        router.push("/login");
+      }
+    };
+    fetchUser();
+  }, [router]);
 
-    console.log("saving changes...");
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      alert("Name is required");
+      return;
+    }
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("profile saved");
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          name: formData.name,
+          bio: formData.bio,
+          phone: formData.phone,
+          location: formData.location,
+        },
+      });
+
+      if (error) throw error;
       setIsEditing(false);
-    } catch (err) {
-      console.error("error: failed to save");
+      // Refresh user data
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    console.log("logging out user...");
-    try {
-      // simulate logout logic
-      console.log("user logged out successfully");
-    } catch (err) {
-      console.error("error: logout failed");
-    }
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
-  const handleProfilePicChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (event.target.files && event.target.files[0]) {
-        const file = event.target.files[0];
-        const newProfilePic = URL.createObjectURL(file);
-        if (!file.type.toLowerCase().startsWith("image/")) {
-          console.error("error: not an image");
-          return;
-        }
-        setProfilePic(newProfilePic);
-        console.log("profile picture updated");
-      } else {
-        console.error("error: no file selected");
-      }
-    } catch (err) {
-      console.error("error: failed to change profile picture");
-    }
-  };
+  if (!user)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      {/* Header remains the same */}
       <header className="bg-white border-b border-gray-100 py-4 px-6">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-[#808080] rounded-full"></div>
-            <h1 className="text-xl font-semibold text-gray-800">Spark! Bytes</h1>
+            <h1 className="text-xl font-semibold text-gray-800">
+              Spark! Bytes
+            </h1>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="text-[#808080] hover:text-[#A00000] font-medium transition-colors"
           >
@@ -91,86 +106,102 @@ export default function ProfilePage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 w-full max-w-md p-8">
           <div className="text-center mb-8">
             <div className="w-24 h-24 rounded-full mx-auto mb-4 relative">
-              <img src={profilePic} alt="Profile" className="w-full h-full rounded-full border border-gray-300 object-cover" />
-              {isEditing && (
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePicChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-              )}
+              {/* can add user profile image here */}
+              {/* <img
+                src={
+                  user.user_metadata?.avatar_url ||
+                  "https://via.placeholder.com/150"
+                }
+                alt="Profile"
+                className="w-full h-full rounded-full border border-gray-300 object-cover"
+              /> */}
             </div>
 
             {isEditing ? (
               <div className="space-y-4">
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
+                  placeholder="Full Name"
                 />
                 <input
                   type="email"
-                  value={email}
+                  value={formData.email}
                   disabled
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-gray-500 bg-gray-100 cursor-not-allowed"
                 />
                 <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  value={formData.bio}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
                   rows={3}
                   placeholder="Write a short bio..."
-                ></textarea>
+                />
                 <input
                   type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
                   placeholder="Phone"
                 />
                 <input
                   type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
                   placeholder="Location"
-                />
-                <input
-                  type="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
-                  placeholder="Website"
                 />
               </div>
             ) : (
               <>
-                <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
-                <p className="text-gray-500">{email}</p>
-                <p className="text-gray-600 text-sm mt-2">{bio}</p>
-                <p className="text-gray-500 mt-2">{phone}</p>
-                <p className="text-gray-500">{location}</p>
-                <a href={website} target="_blank" className="text-blue-500 hover:underline text-sm">
-                  {website}
-                </a>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {formData.name || "No name set"}
+                </h2>
+                <p className="text-gray-500">{formData.email}</p>
+                <p className="text-gray-600 text-sm mt-2">
+                  {formData.bio || "No bio yet"}
+                </p>
+                {formData.phone && (
+                  <p className="text-gray-500 mt-2">{formData.phone}</p>
+                )}
+                {formData.location && (
+                  <p className="text-gray-500">{formData.location}</p>
+                )}
               </>
             )}
           </div>
 
           {isEditing ? (
-            <button
-              onClick={handleSave}
-              className="w-full bg-[#CC0000] hover:bg-[#A00000] text-white py-3 rounded-lg font-medium transition-colors"
-              disabled={loading}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-[#CC0000] hover:bg-[#A00000] text-white py-3 rounded-lg font-medium transition-colors"
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg font-medium transition-colors"
+              className="w-full bg-gray-100 hover:text-[#A00000] text-gray-800 py-3 rounded-lg font-medium transition-colors"
+              style={{ background: "#cc0103", color: "white" }}
             >
               Edit Profile
             </button>
