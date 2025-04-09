@@ -58,18 +58,18 @@ export default function LoginPage() {
 
   /**
    * Handles Boston University Single Sign-On authentication
-   */const handleBUAuth = async () => {
-  setLoading(true);
-  try {
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) throw error;
-    setError("Check your BU email for a login link.");
-  } catch (err: any) {
-    setError(err.message || 'BU authentication failed.');
-  } finally {
-    setLoading(false);
-  }
-};
+   */
+  const handleBUAuth = async () => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setIsLoggedIn(true);
+    } catch (err) {
+      setError('BU authentication failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Enables guest mode with limited access
@@ -81,14 +81,14 @@ export default function LoginPage() {
   /**
    * Handles user logout and guest mode exit
    * Resets all auth-related state variables
-   */const handleLogout = async () => {
-  await supabase.auth.signOut();
-  setIsLoggedIn(false);
-  setIsGuestMode(false);
-  setEmail('');
-  setPassword('');
-  setName('');
-};
+   */
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setIsGuestMode(false);
+    setEmail('');
+    setPassword('');
+    setName('');
+  };
 
   /**
    * Renders the main application content for authenticated and guest users

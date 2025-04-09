@@ -90,7 +90,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-[#808080] rounded-full"></div>
             <h1 className="text-xl font-semibold text-gray-800">
-              Spark! Bytes
+              Spark! Bytes Boston University
             </h1>
           </div>
           <button
