@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { sendVerificationCode, verifyCode } = require('../utils/email');
 const supabase = require('../utils/supabase');
-const { userServices } = require('../utils/supabaseServices');
+const { sendVerificationCode, verifyCode } = require('../utils/email');
 
-// Request verification code
+// Request verification code (for BU email verification)
 router.post('/request-verification', async (req, res) => {
   try {
     const { email } = req.body;
@@ -19,29 +16,18 @@ router.post('/request-verification', async (req, res) => {
       });
     }
     
-    // Check if email is already in use (MongoDB)
-    const existingUser = await User.findOne({ email, isVerified: true });
+    // Check if user already exists
+    const { data: existingUser, error: userError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
+      
     if (existingUser) {
       return res.status(400).json({ 
         success: false, 
         message: 'An account with this email already exists' 
       });
-    }
-    
-    // Also check Supabase
-    try {
-      const supabaseUser = await userServices.getUserByEmail(email);
-      if (supabaseUser && supabaseUser.is_verified) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'An account with this email already exists' 
-        });
-      }
-    } catch (error) {
-      // If no user exists, this is fine
-      if (error.code !== 'PGRST116') {
-        console.error('Supabase error:', error);
-      }
     }
     
     // Send verification code
@@ -83,17 +69,10 @@ router.post('/verify-email', async (req, res) => {
       });
     }
     
-    // Generate a temporary token for registration
-    const tempToken = jwt.sign(
-      { email, verified: true },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '1h' }
-    );
-    
     res.status(200).json({
       success: true,
       message: 'Email verified successfully',
-      tempToken
+      verified: true
     });
   } catch (error) {
     console.error('Email verification error:', error);
@@ -107,17 +86,9 @@ router.post('/verify-email', async (req, res) => {
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, tempToken } = req.body;
+    const { name, email, password, verified } = req.body;
     
-    // Validate token to ensure email was verified
-    let verified = false;
-    try {
-      const decoded = jwt.verify(tempToken, process.env.JWT_SECRET || 'your_jwt_secret');
-      verified = decoded.verified && decoded.email === email;
-    } catch (error) {
-      verified = false;
-    }
-    
+    // Check if email is verified
     if (!verified) {
       return res.status(400).json({ 
         success: false, 
@@ -125,47 +96,43 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Check if user already exists in MongoDB
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Check if email is a BU email
+    if (!email.endsWith('@bu.edu')) {
       return res.status(400).json({ 
         success: false, 
-        message: 'User with this email already exists' 
+        message: 'Only Boston University email addresses are allowed' 
       });
     }
     
-    // Create new MongoDB user
-    const user = new User({
-      name,
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      isVerified: true
+      options: {
+        data: {
+          name
+        }
+      }
     });
     
-    await user.save();
+    if (authError) {
+      throw authError;
+    }
     
-    // Also create the user in Supabase
-    try {
-      // First sign up for auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (authError) throw authError;
-      
-      // Then create user in the users table
-      await userServices.createUser({
-        id: authData.user.id,
-        email,
-        name,
-        is_verified: true,
-        created_at: new Date()
-      });
-      
-    } catch (supaError) {
-      console.error('Supabase user creation error:', supaError);
-      // Continue anyway - we can sync later
+    // Create profile record
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert([
+        { 
+          id: authData.user.id,
+          name,
+          email,
+          created_at: new Date()
+        }
+      ]);
+    
+    if (profileError) {
+      throw profileError;
     }
     
     res.status(201).json({ 
@@ -176,7 +143,7 @@ router.post('/register', async (req, res) => {
     console.error('Registration error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Registration failed' 
+      message: error.message || 'Registration failed' 
     });
   }
 });
@@ -186,67 +153,38 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email in MongoDB
-    const user = await User.findOne({ email });
-    if (!user) {
+    // Sign in with Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
     
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
-    }
+    // Get profile data
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
     
-    // Check if user is verified
-    if (!user.isVerified) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Please verify your email before logging in' 
-      });
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
     }
-    
-    // Try to sign in with Supabase as well
-    let supabaseUser = null;
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (!error) {
-        supabaseUser = data.user;
-      }
-    } catch (supaError) {
-      console.error('Supabase login error:', supaError);
-      // Continue anyway with MongoDB authentication
-    }
-    
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        email: user.email,
-        supabaseId: supabaseUser ? supabaseUser.id : null
-      },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '7d' }
-    );
     
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,
+      session: data.session,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
+        id: data.user.id,
+        name: profile?.name || data.user.user_metadata?.name || '',
+        email: data.user.email
       }
     });
   } catch (error) {
@@ -258,7 +196,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// BU Single Sign-On Auth
+// BU Single Sign-On Auth (mock implementation)
 router.post('/bu-auth', async (req, res) => {
   try {
     const { email } = req.body;
@@ -270,92 +208,93 @@ router.post('/bu-auth', async (req, res) => {
       });
     }
     
-    // Check if user exists in MongoDB, create if not
-    let user = await User.findOne({ email });
+    // Check if user exists in Supabase
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
     
-    if (!user) {
-      // Extract name from email (firstname.lastname@bu.edu)
+    let userId;
+    let session;
+    
+    if (userData) {
+      // User exists, simulate login
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+      });
+      
+      if (error) throw error;
+      
+      // Use the token to get a session
+      const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
+        token_hash: data.properties.hashed_token,
+        type: 'email'
+      });
+      
+      if (sessionError) throw sessionError;
+      
+      session = sessionData.session;
+      userId = userData.id;
+    } else {
+      // Create new user
       const nameParts = email.split('@')[0].split('.');
       const name = nameParts.map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
       
-      // Create a new user with a random password
+      // Random password for the account
       const randomPassword = Math.random().toString(36).slice(-10);
       
-      user = new User({
-        name,
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
         password: randomPassword,
-        isVerified: true // Auto-verify for BU SSO
+        user_metadata: { name },
+        email_confirm: true
       });
       
-      await user.save();
+      if (authError) throw authError;
       
-      // Also create in Supabase if possible
-      try {
-        // Create auth user
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email,
-          password: randomPassword,
-          email_confirm: true
-        });
-        
-        if (!authError) {
-          // Create user record
-          await userServices.createUser({
+      // Create profile record
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          { 
             id: authData.user.id,
-            email,
             name,
-            is_verified: true,
+            email,
             created_at: new Date()
-          });
-        }
-      } catch (supaError) {
-        console.error('Supabase user creation error:', supaError);
-        // Continue anyway
-      }
-    }
-    
-    // Try to find or create user in Supabase
-    let supabaseId = null;
-    try {
-      let supabaseUser = await userServices.getUserByEmail(email);
+          }
+        ]);
       
-      if (!supabaseUser) {
-        // Create auth user if not exists
-        const { data: authData } = await supabase.auth.admin.createUser({
-          email,
-          password: Math.random().toString(36).slice(-10),
-          email_confirm: true
-        });
-        
-        supabaseId = authData.user.id;
-      } else {
-        supabaseId = supabaseUser.id;
-      }
-    } catch (supaError) {
-      console.error('Supabase user lookup error:', supaError);
-      // Continue anyway
+      if (profileError) throw profileError;
+      
+      // Generate session for the user
+      const { data: sessionData, error: sessionError } = await supabase.auth.admin.createSession({
+        userId: authData.user.id
+      });
+      
+      if (sessionError) throw sessionError;
+      
+      session = sessionData.session;
+      userId = authData.user.id;
     }
     
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        email: user.email,
-        supabaseId
-      },
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '7d' }
-    );
+    // Get profile data
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
     
     res.status(200).json({
       success: true,
       message: 'BU authentication successful',
-      token,
+      session,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
+        id: userId,
+        name: profile?.name || '',
+        email
       }
     });
   } catch (error) {
@@ -363,6 +302,26 @@ router.post('/bu-auth', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Authentication failed' 
+    });
+  }
+});
+
+// Logout user
+router.post('/logout', async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) throw error;
+    
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to logout' 
     });
   }
 });
