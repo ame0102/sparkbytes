@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import CreateEventModal from "../components/CreateEventModal";
 import { getAllEvents, getCurrentUser } from "@/utils/eventApi";
 import { supabase } from "@/utils/supabaseClient";
+import NavBar from "@/components/NavBar";
 
 const { Header, Content } = Layout;
 const { Meta } = Card;
@@ -219,119 +220,7 @@ export default function Home() {
 
   return (
     <Layout style={{ backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
-      {/* Header */}
-      <Header
-        style={{
-          backgroundColor: "#CC0000",
-          padding: "0 50px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* Left side - Logo and navigation links */}
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              color: "#fff",
-              fontSize: "24px",
-              fontWeight: "bold",
-              marginRight: "40px",
-              cursor: "pointer",
-            }}
-            onClick={() => router.push("/")}
-          >
-            Spark! Bytes
-          </div>
-
-          <div style={{ display: "flex", gap: "20px" }}>
-            <span
-              style={{
-                color: "#fff",
-                cursor: "pointer",
-                fontWeight: "900",
-                fontSize: "16px",
-              }}
-              onClick={() => router.push("/")}
-            >
-              Home
-            </span>
-            <span
-              style={{
-                color: "#fff",
-                cursor: "pointer",
-                fontWeight: "500",
-                fontSize: "16px",
-              }}
-              onClick={() => router.push("/about")}
-            >
-              About
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <Input
-            id="search-input"
-            placeholder="Search"
-            prefix={<SearchOutlined />}
-            style={{
-              width: 200,
-              marginRight: "20px",
-              borderRadius: "20px",
-            }}
-            value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-            allowClear
-          />
-
-          {isLoggedIn ? (
-            <Dropdown 
-              overlay={
-                <Menu>
-                  <Menu.Item key="profile" onClick={() => router.push("/profile")}>
-                    My Profile
-                  </Menu.Item>
-                  <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
-                    Logout
-                  </Menu.Item>
-                </Menu>
-              } 
-              placement="bottomRight"
-            >
-              <div
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <Avatar
-                  style={{ backgroundColor: "#f56a00" }}
-                  icon={<UserOutlined />}
-                />
-                <span style={{ color: "#fff" }}>{userName || "User"}</span>
-              </div>
-            </Dropdown>
-          ) : (
-            <Button
-              type="text"
-              icon={<UserOutlined />}
-              onClick={handleLogin}
-              style={{
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              Login
-            </Button>
-          )}
-        </div>
-      </Header>
-
+      <NavBar />
       {/* Body content */}
       <Content style={{ padding: "50px" }}>
         {/* Welcome Section */}
