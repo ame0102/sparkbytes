@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabaseClient';
+import NavBar from "@/components/NavBar";
 
 export default function GuestPage() {
   const router = useRouter();
@@ -254,32 +255,7 @@ export default function GuestPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="bg-[#b22222] py-4 px-6 text-white">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">Spark! Bytes</h1>
-            </Link>
-            <div className="ml-8 flex gap-6">
-              <Link href="/" className="text-white hover:text-gray-200 transition-colors">
-                Home
-              </Link>
-              <Link href="/about" className="text-white hover:text-gray-200 transition-colors">
-                About
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/login"
-              className="text-white bg-[#A00000] hover:bg-[#900000] px-3 py-1.5 rounded-full text-sm"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      <NavBar />
       <main className="flex-1 p-6">
         <div className="max-w-5xl mx-auto">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
