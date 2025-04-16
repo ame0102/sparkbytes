@@ -86,8 +86,12 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header remains the same */}
       <header className="bg-white border-b border-gray-100 py-4 px-6">
+
+
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
+
+            
             <div className="h-8 w-8 bg-[#808080] rounded-full"></div>
             <h1 className="text-xl font-semibold text-gray-800">
               Spark! Bytes
@@ -115,7 +119,11 @@ export default function ProfilePage() {
                 alt="Profile"
                 className="w-full h-full rounded-full border border-gray-300 object-cover"
               /> */}
+
+
             </div>
+
+
 
             {isEditing ? (
               <div className="space-y-4">
@@ -128,6 +136,8 @@ export default function ProfilePage() {
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
                   placeholder="Full Name"
                 />
+
+
                 <input
                   type="email"
                   value={formData.email}
@@ -143,6 +153,9 @@ export default function ProfilePage() {
                   rows={3}
                   placeholder="Write a short bio..."
                 />
+
+
+
                 <input
                   type="tel"
                   value={formData.phone}
@@ -158,10 +171,15 @@ export default function ProfilePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
                   }
+
+
+
                   className="w-full p-2.5 border border-gray-200 rounded-lg text-sm text-black focus:outline-none focus:ring-1 focus:ring-[#CC0000]"
                   placeholder="Location"
                 />
               </div>
+
+
             ) : (
               <>
                 <h2 className="text-xl font-semibold text-gray-800">
@@ -180,6 +198,9 @@ export default function ProfilePage() {
               </>
             )}
           </div>
+
+
+
 
           {isEditing ? (
             <div className="flex gap-3">
@@ -205,9 +226,13 @@ export default function ProfilePage() {
             >
               Edit Profile
             </button>
+
+
           )}
         </div>
       </main>
+
+
     </div>
   );
 }
