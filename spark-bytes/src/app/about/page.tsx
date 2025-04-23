@@ -1,73 +1,47 @@
 "use client";
 
-import { Layout, Button, Avatar, Dropdown, Menu } from "antd";
-import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Layout } from "antd";
 import NavBar from "@/components/NavBar";
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 
 export default function AboutPage() {
-  const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("User");
-
-  const handleLogin = () => {
-    router.push("/login");
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    router.push("/login");
-  };
-
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" onClick={() => router.push("/profile")}>
-        My Profile
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
-        Logout
-      </Menu.Item>
-    </Menu>
-  );
-
   return (
     <Layout style={{ backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
       <NavBar />
-      <Content style={{ padding: "50px" }}>
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-          <h1
-            style={{
-              fontSize: "32px",
-              fontWeight: "bold",
-              marginBottom: "24px",
-            }}
-          >
-            About Us.
-          </h1>
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "32px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            }}
-          >
-            <p
+      <Content style={{ padding: "60px 20px", display: "flex", justifyContent: "center" }}>
+        <div style={{ maxWidth: "960px", width: "100%" }}>
+          <header style={{ marginBottom: "40px" }}>
+            <h1
               style={{
-                fontSize: "16px",
-                lineHeight: "1.8",
-                marginBottom: "16px",
+                fontSize: "40px",
+                fontWeight: 700,
+                borderLeft: "6px solid #CC0000",
+                paddingLeft: "16px",
+                marginBottom: "8px",
+                color: "#222",
               }}
             >
-              <strong>Spark! Bytes</strong> was created for students at Boston
-              University to find free food events on campus. Developed by a team
-              of Spark! students passionate about solving real-world problems
-              through technology.
+              About Spark! Bytes
+            </h1>
+            <p style={{ fontSize: "18px", color: "#666", marginTop: "8px" }}>
+              Built by BU students. Powered by innovation. Designed to reduce waste and build community.
             </p>
-          </div>
+          </header>
+
+          <section style={{ fontSize: "17px", lineHeight: "1.8", color: "#444", paddingLeft: "6px" }}>
+            <p>
+              <strong>Spark! Bytes</strong> is a web application developed to help the Boston University (BU) community discover events across campus that offer free food or snacks. These events often have excess quantities of food, and our platform helps redirect that surplus to students, faculty, and staff who can make use of it.
+            </p>
+
+            <p style={{ marginTop: "24px" }}>
+              By improving visibility and turnout for food-inclusive events, Spark! Bytes contributes to reducing unnecessary food waste on campus. At the same time, it supports student wellness and fosters community engagement.
+            </p>
+
+            <p style={{ marginTop: "24px" }}>
+              This project was developed through the <strong>Spark!</strong> initiative at BU — a collaborative, student-driven program focused on applying technology to real-world social and environmental challenges.
+            </p>
+          </section>
         </div>
       </Content>
     </Layout>
