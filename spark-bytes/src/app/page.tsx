@@ -101,7 +101,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const locationOptions = ["East", "Central", "West", "South", "Fenway"];
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-
+  const [authChecked, setAuthChecked] = useState(false);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   // Check user authentication status on load
   useEffect(() => {
@@ -110,27 +111,30 @@ export default function Home() {
         const user = await getCurrentUser();
         if (user) {
           setIsLoggedIn(true);
-          
-          // Get user profile info
           const { data } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
             .single();
-            
+  
           if (data?.full_name) {
             setUserName(data.full_name);
           } else {
             setUserName(user.email?.split('@')[0] || 'User');
           }
+        } else {
+          setUnauthorized(true);
         }
       } catch (error) {
-        console.error('Error checking user:', error);
+        console.error('Auth error:', error);
+        setUnauthorized(true);
+      } finally {
+        setAuthChecked(true);
       }
     };
-    
+  
     checkUser();
-  }, []);
+  }, []);  
   
   // Fetch events from the database
   useEffect(() => {
@@ -190,10 +194,11 @@ export default function Home() {
       selectedDietary.length === 0 ||
       selectedDietary.every((option) => event.dietary.includes(option));
 
-    const matchesLocation =
-    !selectedLocation || event.location.toLowerCase().includes(selectedLocation.toLowerCase());    
+      const matchesLocation =
+      !selectedLocation || event.location.toLowerCase().includes(selectedLocation.toLowerCase());
+    
 
-    return matchesSearch && matchesDietary && matchesLocation;
+    return matchesSearch && matchesDietary;
   });
 
   const handleLogin = () => {
@@ -218,6 +223,25 @@ export default function Home() {
       onClick: handleLogout
     }
   ];
+
+  // If not authorized, show message and login link
+  if (authChecked && unauthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+        <div className="max-w-md w-full text-center border border-red-200 bg-red-50 p-6 rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
+          <p className="text-red-700 mb-4">Please log in to access the home page.</p>
+          <Button 
+            type="primary" 
+            style={{ backgroundColor: "#CC0000", borderColor: "#CC0000" }}
+            onClick={() => router.push('/login')}
+          >
+            Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Layout style={{ backgroundColor: "#f9f9f9", minHeight: "100vh" }}>
