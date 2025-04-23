@@ -80,26 +80,28 @@ const allEvents = [
 
 // Filter options for now
 const dietaryOptions = [
-  "Vegetarian",
   "Vegan",
+  "Vegetarian",
   "Gluten free",
   "Dairy free",
   "Nut free",
+  "None",
+  "Other"
 ];
-
-const categoryOptions = ["All", "Social", "Academic", "Tech", "Professional"];
 
 export default function Home() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userName, setUserName] = useState<string>("User");
   const [events, setEvents] = useState(allEvents); // Start with mock data, will be updated
   const [loading, setLoading] = useState(true);
+  const locationOptions = ["East", "Central", "West", "South", "Fenway"];
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
 
   // Check user authentication status on load
   useEffect(() => {
@@ -188,11 +190,10 @@ export default function Home() {
       selectedDietary.length === 0 ||
       selectedDietary.every((option) => event.dietary.includes(option));
 
-    // category filter
-    const matchesCategory =
-      selectedCategory === "All" || event.category === selectedCategory;
+    const matchesLocation =
+    !selectedLocation || event.location.toLowerCase().includes(selectedLocation.toLowerCase());    
 
-    return matchesSearch && matchesDietary && matchesCategory;
+    return matchesSearch && matchesDietary && matchesLocation;
   });
 
   const handleLogin = () => {
@@ -309,7 +310,7 @@ export default function Home() {
             </div>
           </div>
 
-          {(selectedCategory !== "All" || selectedDietary.length > 0) && (
+          {(selectedDietary.length > 0) && (
             <div
               style={{
                 marginBottom: "16px",
@@ -318,15 +319,6 @@ export default function Home() {
                 justifyContent: "flex-end",
               }}
             >
-              {selectedCategory !== "All" && (
-                <Tag
-                  closable
-                  onClose={() => setSelectedCategory("All")}
-                  color="red"
-                >
-                  {selectedCategory}
-                </Tag>
-              )}
               {selectedDietary.map((option) => (
                 <Tag
                   key={option}
@@ -464,7 +456,6 @@ export default function Home() {
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedDietary([]);
-                  setSelectedCategory("All");
                 }}
               >
                 Clear All Filters
@@ -483,7 +474,7 @@ export default function Home() {
             key="reset"
             onClick={() => {
               setSelectedDietary([]);
-              setSelectedCategory("All");
+              setSelectedLocation(null);
             }}
           >
             Reset
@@ -492,38 +483,13 @@ export default function Home() {
             key="apply"
             type="primary"
             onClick={() => setIsFilterModalOpen(false)}
-            style={{
-              backgroundColor: "#CC0000",
-              borderColor: "#CC0000",
-            }}
+            style={{ backgroundColor: "#CC0000", borderColor: "#CC0000" }}
           >
             Apply Filters
           </Button>,
         ]}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontWeight: "500",
-              }}
-            >
-              Category
-            </label>
-            <Select
-              style={{ width: "100%" }}
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-            >
-              {categoryOptions.map((option) => (
-                <Option key={option} value={option}>
-                  {option}
-                </Option>
-              ))}
-            </Select>
-          </div>
           <div>
             <label
               style={{
@@ -542,6 +508,30 @@ export default function Home() {
               onChange={setSelectedDietary}
             >
               {dietaryOptions.map((option) => (
+                <Option key={option} value={option}>
+                  {option}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "500",
+              }}
+            >
+              Location
+            </label>
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Filter by location"
+              value={selectedLocation}
+              onChange={setSelectedLocation}
+              allowClear
+            >
+              {locationOptions.map((option) => (
                 <Option key={option} value={option}>
                   {option}
                 </Option>
