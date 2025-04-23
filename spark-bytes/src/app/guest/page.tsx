@@ -66,6 +66,19 @@ export default function GuestPage() {
       image: "/images/sha.jpg"
     }
   ];
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data, error } = await supabase.auth.getUser();
+  
+      // If a user is logged in, redirect them
+      if (data.user) {
+        router.push('/');
+      }
+    };
+  
+    checkAuthStatus();
+  }, []);  
   
   // Simulate loading events
   useEffect(() => {
@@ -267,7 +280,7 @@ export default function GuestPage() {
               </div>
               <div>
                 <h3 className="font-medium text-amber-800 text-sm">Guest Mode</h3>
-                <p className="text-amber-700 text-xs mt-1">You can reserve spots for events, but for full access please sign in with your BU account.</p>
+                <p className="text-amber-700 text-xs mt-1">For full access please sign in with your BU account.</p>
               </div>
             </div>
           </div>
