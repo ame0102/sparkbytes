@@ -22,7 +22,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import CreateEventModal from "../components/CreateEventModal";
-import { getAllEvents, getCurrentUser } from "@/utils/eventApi";
+import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
 import { supabase } from "@/utils/supabaseClient";
 import NavBar from "@/components/NavBar";
 
@@ -135,52 +135,6 @@ export default function Home() {
   
     checkUser();
   }, []);  
-  
-  // Fetch events from the database
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        // Check if Supabase is configured properly
-        if (!supabase) {
-          console.error('Supabase client not initialized');
-          setEvents(allEvents); // Fallback to mock data
-          message.info('Using mock data - database not connected');
-          return;
-        }
-        
-        const data = await getAllEvents();
-        if (data && data.length > 0) {
-          setEvents(data);
-        } else {
-          // If no events found, use mock data
-          console.log('No events found in database, using mock data');
-          setEvents(allEvents);
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        // Fallback to mock data on error
-        setEvents(allEvents);
-        message.info('Failed to load events from database - using mock data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchEvents();
-  }, []);
-  
-  // Refresh events after creating a new one
-  const handleEventCreated = async () => {
-    try {
-      const data = await getAllEvents();
-      if (data) {
-        setEvents(data);
-      }
-    } catch (error) {
-      console.error('Error refreshing events:', error);
-    }
-  };
 
   // Filter events based on search and filters
   const filteredEvents = events.filter((event) => {
@@ -200,6 +154,17 @@ export default function Home() {
 
     return matchesSearch && matchesDietary;
   });
+
+  const handleEventCreated = async () => {
+    try {
+      const data = await getAllEvents(); // Assuming this is how you fetch events
+      if (data) {
+        setEvents(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing events:', error);
+    }
+  };  
 
   const handleLogin = () => {
     router.push("/login");
@@ -246,7 +211,7 @@ export default function Home() {
               className="text-[#CC0000] underline text-sm mt-1 hover:text-[#A00000] transition-colors"
             >
               Continue as Guest
-            </button>
+          </button>
           </div>
         </div>
       </div>
