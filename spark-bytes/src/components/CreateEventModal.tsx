@@ -83,15 +83,17 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
       const eventData = {
         title: values.title,
-        date: values.date ? dayjs(values.date).format("MMMM D, YYYY") : undefined,
-        time: values.time ? dayjs(values.time).format("h:mm a") : undefined,
+        date: dayjs(values.date).format("MMMM D, YYYY"),
+        time: dayjs(values.time).format("h:mm a"),
         location: values.location,
         address: values.address,
-        food: values.food,
-        dietary: values.dietary || [],
+        description: values.description,
+        dietary: values.dietary,
         dietaryComment: values.dietaryComment || null,
+        food: values.food,
       };
 
+      console.log("Submitting event:", eventData);
       await createEvent(eventData);
       message.success("Event created successfully!");
       form.resetFields();
@@ -99,11 +101,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error("Error creating event:", err);
-      if (err?.message) {
-        message.error(err.message);
-      } else {
-        message.error("Failed to create event. Please try again.");
-      }
+      message.error(err?.message || "Failed to create event. Please try again.");
     } finally {
       setLoading(false);
     }
