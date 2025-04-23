@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import NavBar from '@/components/NavBar';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   // State management for authentication and UI
@@ -51,6 +52,7 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       setIsLoggedIn(true);
+      router.push('/');
     } catch (err: any) {
       setError(err.message || 'Authentication failed.');
     } finally {
@@ -77,8 +79,10 @@ export default function LoginPage() {
   /**
    * Enables guest mode with limited access
    */
+  const router = useRouter();
+
   const handleGuestAccess = () => {
-    setIsGuestMode(true);
+    router.push('/guest');
   };
 
   /**
