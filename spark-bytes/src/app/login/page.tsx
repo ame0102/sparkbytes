@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import NavBar from '@/components/NavBar';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   // State management for authentication and UI
@@ -15,6 +16,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isLoggedIn] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [unauthorized, setUnauthorized] = useState(false);
+
+  useEffect(() => {
+    const checkIfLoggedIn = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        setUnauthorized(true);
+      }
+      setAuthChecked(true);
+    };
+    checkIfLoggedIn();
+  }, []);
 
   /**
    * Handles form submission for login and signup
@@ -135,6 +149,23 @@ export default function LoginPage() {
       </div>
     );
   };
+
+  if (authChecked && unauthorized) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full shadow-sm">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">It looks like you're already logged in!</h2>
+          <p className="text-red-700 mb-4">Please return to the home page to view all events</p>
+          <button 
+            onClick={() => router.push('/')} 
+            className="bg-[#CC0000] hover:bg-[#A00000] text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors"
+          >
+            Back to Home Page
+          </button>
+        </div>
+      </div>
+    );
+  }  
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
