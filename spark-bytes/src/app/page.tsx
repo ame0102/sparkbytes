@@ -7,6 +7,7 @@ import CreateEventModal from "../components/CreateEventModal";
 import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
 import { supabase } from "@/utils/supabaseClient";
 import NavBar from "@/components/NavBar";
+import dayjs from "dayjs";
 
 export default function Home() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function Home() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const formatDate = (dateString: string) => {
+    return dayjs(dateString).format("MMM. D, YYYY");
+  };
 
   // Check user authentication status on load
   useEffect(() => {
@@ -156,12 +160,26 @@ export default function Home() {
                   {event.title}
                 </h3>
 
-                <p style={{ margin: "4px 0", color: "#555" }}>
-                  <strong>Time:</strong> {event.date} · {event.time}
+                <p style={{ fontSize: "14px", margin: "4px 0", color: "#555" }}>
+                  <strong>Time:</strong> {formatDate(event.date)} · {event.time}
                 </p>
 
-                <p style={{ margin: "4px 0", color: "#555" }}>
+                <p style={{ fontSize: "14px", margin: "4px 0", color: "#555" }}>
                   <strong>Location:</strong> {event.location}
+                </p>
+
+                <p
+                  style={{
+                    margin: "4px 0",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "100%",
+                    fontSize: "14px",
+                    color: "#555"
+                  }}
+                >
+                  <strong>Food:</strong> {event.food}
                 </p>
               </div>
 
