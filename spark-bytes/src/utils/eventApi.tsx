@@ -35,10 +35,16 @@ export async function createEvent(eventData: any) {
   return data;
 }
 
-export async function getAllEvents() {
+export async function getAllEvents(searchTerm = "") {
   const { data, error } = await supabase.from("events").select("*");
   if (error) throw new Error(error.message);
-  return data;
+
+  if (!searchTerm) return data;
+
+  const term = searchTerm.toLowerCase();
+  return (data || []).filter((e: any) =>
+    `${e.title} ${e.description || ""}`.toLowerCase().includes(term)
+  );
 }
 
 export async function getEventById(id: string) {
