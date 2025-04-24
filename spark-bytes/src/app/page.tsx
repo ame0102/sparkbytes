@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -5,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dayjs from "dayjs";
 import Button from "antd/lib/button";
+import { Input } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 
 import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
@@ -16,16 +19,16 @@ export default function Home() {
   const searchParams = useSearchParams();
   const urlQuery     = (searchParams.get("search") || "").trim();
 
-  // local search input state (sync with URL)
+  // local search input (sync with URL)
   const [query, setQuery] = useState(urlQuery);
 
-  // auth state
+  // auth
   const [authChecked, setAuthChecked] = useState(false);
   const [unauth, setUnauth]           = useState(false);
   const [isLogged, setIsLogged]       = useState(false);
   const [userName, setUserName]       = useState("User");
 
-  // events state
+  // events
   const [events,  setEvents]  = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -48,7 +51,7 @@ export default function Home() {
     })();
   }, []);
 
-  /* fetch events whenever the URL search term changes */
+  /* fetch events when URL search changes */
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -58,7 +61,7 @@ export default function Home() {
     })();
   }, [urlQuery]);
 
-  /* handle inline search typing */
+  /* inline search */
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
@@ -85,7 +88,7 @@ export default function Home() {
       <NavBar />
 
       <main style={{ padding: 40 }}>
-        {/* header row */}
+        {/* header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Events</h2>
           <Button type="primary" onClick={() => setShowCreate(true)} style={{ background: "#CC0000" }}>
@@ -93,13 +96,16 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* inline search bar */}
+        {/* polished search bar */}
         <div style={{ maxWidth: 400, marginBottom: 24 }}>
-          <input
+          <Input
+            size="large"
             value={query}
             onChange={handleChange}
-            placeholder="Search events…"
-            style={{ width: "100%", padding: "10px 14px", border: "1px solid #ddd", borderRadius: 8 }}
+            placeholder="Search events titles…"
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#888" }} />}
+            style={{ borderRadius: 8 }}
           />
         </div>
 
