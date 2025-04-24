@@ -5,53 +5,46 @@ import { useState, useEffect, ChangeEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dayjs from "dayjs";
-import Button from "antd/lib/button";
-import { Input } from "antd";
+import { Button, Input, Select, Pagination } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 
 import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
 import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
-import { supabase } from "@/utils/supabaseClient";
+
+const { Option } = Select;
 
 export default function Home() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const urlQuery     = (searchParams.get("search") || "").trim();
 
-  // local search input (sync with URL)
+  // search input
   const [query, setQuery] = useState(urlQuery);
 
-  // auth
+  // auth guard
   const [authChecked, setAuthChecked] = useState(false);
   const [unauth, setUnauth]           = useState(false);
-  const [isLogged, setIsLogged]       = useState(false);
-  const [userName, setUserName]       = useState("User");
 
-  // events
-  const [events,  setEvents]  = useState<any[]>([]);
+  // raw events
+  const [events, setEvents]   = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // filters
+  const [locFilter,  setLocFilter]  = useState<string[]>([]);
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [dietFilter, setDietFilter] = useState<string[]>([]);
+
+  // pagination
+  const [page, setPage] = useState(1);
+  const pageSize        = 10;
+
+  // create modal
   const [showCreate, setShowCreate] = useState(false);
 
   const fmt = (d: string) => dayjs(d).format("MMM. D, YYYY");
 
-  /* auth once */
-  useEffect(() => {
-    (async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        setUnauth(true);
-        setAuthChecked(true);
-        return;
-      }
-      setIsLogged(true);
-      const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-      setUserName(data?.full_name ?? user.email?.split("@")[0] ?? "User");
-      setAuthChecked(true);
-    })();
-  }, []);
-
-  /* fetch events when URL search changes */
+  // load events
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -61,89 +54,243 @@ export default function Home() {
     })();
   }, [urlQuery]);
 
-  /* inline search */
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    router.replace(val.trim() ? `/?search=${encodeURIComponent(val.trim())}` : "/");
+  // reset page on filter change
+  useEffect(() => setPage(1), [query, locFilter, timeFilter, dietFilter]);
+
+  // derive filter options
+  const locations = Array.from(new Set(events.map(e => e.location))).sort();
+  const dietaryOptions = [
+    "Vegan","Vegetarian","Gluten Free","Dairy Free","Nut Free","Other","None"
+  ];
+
+  // search handler
+  const onSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setQuery(v);
+    router.replace(v.trim() ? `/?search=${encodeURIComponent(v.trim())}` : "/");
   };
 
-  if (authChecked && unauth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
-        <div className="max-w-md w-full text-center border border-red-200 bg-red-50 p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
-          <p className="text-red-700 mb-4">Please log in to access the home page.</p>
-          <div className="flex flex-col items-center gap-3">
-            <Button type="primary" style={{ background: "#CC0000" }} onClick={() => router.push("/login")}>Login</Button>
-            <button onClick={() => router.push("/guest")} className="text-[#CC0000] underline text-sm mt-1 hover:text-[#A00000]">Continue as Guest</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // filter pipeline
+  const now = dayjs();
+  const filtered = events
+    .filter(e => e.title.toLowerCase().includes(query.toLowerCase()))
+    .filter(e => !locFilter.length || locFilter.includes(e.location))
+    .filter(e => {
+      if (timeFilter === "all") return true;
+      const ev = dayjs(e.date);
+      if (timeFilter === "past_day")
+        return ev.isBefore(now) && now.diff(ev, "hour") <= 24;
+      if (timeFilter === "past_3days")
+        return ev.isBefore(now) && now.diff(ev, "day") <= 3;
+      if (timeFilter === "past_week")
+        return ev.isBefore(now) && now.diff(ev, "day") <= 7;
+      if (timeFilter === "past_3months")
+        return ev.isBefore(now) && now.diff(ev, "month") <= 3;
+      if (timeFilter === "next_day")
+        return ev.isAfter(now) && ev.diff(now, "hour") <= 24;
+      if (timeFilter === "next_3days")
+        return ev.isAfter(now) && ev.diff(now, "day") <= 3;
+      if (timeFilter === "next_week")
+        return ev.isAfter(now) && ev.diff(now, "day") <= 7;
+      if (timeFilter === "next_3months")
+        return ev.isAfter(now) && ev.diff(now, "month") <= 3;
+      return true;
+    })
+    .filter(e => {
+      if (!dietFilter.length) return true;
+      return (e.dietary || []).some((d: string) => dietFilter.includes(d));
+    });
+
+  // pagination slice
+  const total = filtered.length;
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <>
       <NavBar />
 
-      <main style={{ padding: 40 }}>
+      <main
+        style={{
+          margin: "0 1.25in",
+          paddingBottom: "2rem",
+          maxWidth: "calc(100% - 2.5in)"
+        }}
+      >
         {/* header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Events</h2>
-          <Button type="primary" onClick={() => setShowCreate(true)} style={{ background: "#CC0000" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            margin: "2rem 0 1rem"
+          }}
+        >
+          <h2 style={{ fontSize: 28, fontWeight: "bold" }}>Events</h2>
+          <Button
+            type="primary"
+            style={{ background: "#CC0000" }}
+            onClick={() => setShowCreate(true)}
+          >
             + Create Event
           </Button>
         </div>
 
-        {/* polished search bar */}
-        <div style={{ maxWidth: 400, marginBottom: 24 }}>
+        {/* filters */}
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: "1.5rem"
+          }}
+        >
           <Input
             size="large"
             value={query}
-            onChange={handleChange}
-            placeholder="Search events titles…"
+            onChange={onSearchChange}
+            placeholder="Search titles…"
             allowClear
             prefix={<SearchOutlined style={{ color: "#888" }} />}
-            style={{ borderRadius: 8 }}
+            style={{ width: 300, borderRadius: 8 }}
           />
+
+          <Select
+            mode="multiple"
+            allowClear
+            placeholder="Locations"
+            value={locFilter}
+            onChange={setLocFilter}
+            style={{ width: 220 }}
+            maxTagCount={2}
+            maxTagPlaceholder={omitted => `+${omitted.length} more`}
+          >
+            {locations.map(loc => (
+              <Option key={loc} value={loc}>{loc}</Option>
+            ))}
+          </Select>
+
+          <Select
+            value={timeFilter}
+            onChange={setTimeFilter}
+            style={{ width: 220 }}
+          >
+            <Option value="all">All Time</Option>
+            <Option value="past_day">Past 1 Day</Option>
+            <Option value="past_3days">Past 3 Days</Option>
+            <Option value="past_week">Past 1 Week</Option>
+            <Option value="past_3months">Past 3 Months</Option>
+            <Option value="next_day">Next 1 Day</Option>
+            <Option value="next_3days">Next 3 Days</Option>
+            <Option value="next_week">Next 1 Week</Option>
+            <Option value="next_3months">Next 3 Months</Option>
+          </Select>
+
+          <Select
+            mode="multiple"
+            allowClear
+            placeholder="Dietary"
+            value={dietFilter}
+            onChange={setDietFilter}
+            style={{ width: 240 }}
+            maxTagCount={2}
+            maxTagPlaceholder={omitted => `+${omitted.length} more`}
+          >
+            {dietaryOptions.map(d => (
+              <Option key={d} value={d}>{d}</Option>
+            ))}
+          </Select>
         </div>
 
+        {/* status */}
         {loading && <p style={{ textAlign: "center", color: "#666" }}>Loading…</p>}
-        {!loading && events.length === 0 && <p style={{ textAlign: "center", color: "#666" }}>No events found.</p>}
+        {!loading && total === 0 && (
+          <p style={{ textAlign: "center", color: "#666" }}>No events found.</p>
+        )}
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
-          {events.map((ev) => (
-            <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+        {/* events */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+            gap: "1.5rem"
+          }}
+        >
+          {paged.map(ev => (
+            <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none" }}>
               <div
-                style={{ width: 300, background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", cursor: "pointer", transition: "transform .2s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  cursor: "pointer",
+                  transition: "transform .2s"
+                }}
+                onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.02)")}
+                onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
               >
-                <img src={`/${ev.location}.jpg`} alt={ev.location} style={{ width: "100%", height: 180, objectFit: "cover" }} onError={(e) => ((e.target as HTMLImageElement).src = "/default.jpg")}/>
-                <div style={{ padding: 16, flex: 1 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: "bold", marginBottom: 6, color: "black" }}>{ev.title}</h3>
-                  <p style={{ fontSize: 14, margin: "4px 0", color: "#555" }}><strong>Time:</strong> {fmt(ev.date)} · {ev.time}</p>
-                  <p style={{ fontSize: 14, margin: "4px 0", color: "#555" }}><strong>Location:</strong> {ev.location}</p>
-                  <p style={{ fontSize: 14, margin: "4px 0", color: "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><strong>Food:</strong> {ev.food}</p>
+                <img
+                  src={`/${ev.location}.jpg`}
+                  alt={ev.location}
+                  style={{ width: "100%", height: 180, objectFit: "cover" }}
+                  onError={e => (e.currentTarget.src = "/default.jpg")}
+                />
+                <div style={{ padding: 16 }}>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold" }}>
+                    {ev.title}
+                  </h3>
+                  <p style={{ margin: "4px 0", color: "#555" }}>
+                    <strong>When:</strong> {fmt(ev.date)} · {ev.time}
+                  </p>
+                  <p style={{ margin: "4px 0", color: "#555" }}>
+                    <strong>Where:</strong> {ev.location}
+                  </p>
+
+                  {/* dietary chips */}
+                  {ev.dietary?.length > 0 && (
+                    <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {ev.dietary.map((d: string, i: number) => (
+                        <span
+                          key={i}
+                          style={{
+                            background: "#e6f4ff",
+                            color: "#1677ff",
+                            padding: "4px 8px",
+                            borderRadius: 8,
+                            fontSize: 12
+                          }}
+                        >
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {ev.dietary?.length > 0 && (
-                  <div style={{ padding: "12px 16px", borderTop: "1px solid #eee", display: "flex", flexWrap: "wrap", gap: 8, background: "#fafafa" }}>
-                    {ev.dietary.map((d: string, i: number) => (
-                      <span key={i} style={{ background: "#e6f4ff", color: "#1677ff", padding: "4px 8px", borderRadius: 8, fontSize: 12 }}>{d}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             </Link>
           ))}
         </div>
 
+        {/* pagination */}
+        {total > pageSize && (
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <Pagination
+              current={page}
+              pageSize={pageSize}
+              total={total}
+              onChange={p => setPage(p)}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
+
+        {/* create modal */}
         <CreateEventModal
           isOpen={showCreate}
           onClose={() => setShowCreate(false)}
           onEventCreated={async () => {
-            const data = await getAllEvents(query.trim());
+            const data = await getAllEvents(query);
             setEvents(data);
           }}
         />
