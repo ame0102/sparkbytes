@@ -78,22 +78,14 @@ export default function Home() {
     .filter(e => {
       if (timeFilter === "all") return true;
       const ev = dayjs(e.date);
-      if (timeFilter === "past_day")
-        return ev.isBefore(now) && now.diff(ev, "hour") <= 24;
-      if (timeFilter === "past_3days")
-        return ev.isBefore(now) && now.diff(ev, "day") <= 3;
-      if (timeFilter === "past_week")
-        return ev.isBefore(now) && now.diff(ev, "day") <= 7;
-      if (timeFilter === "past_3months")
-        return ev.isBefore(now) && now.diff(ev, "month") <= 3;
-      if (timeFilter === "next_day")
-        return ev.isAfter(now) && ev.diff(now, "hour") <= 24;
-      if (timeFilter === "next_3days")
-        return ev.isAfter(now) && ev.diff(now, "day") <= 3;
-      if (timeFilter === "next_week")
-        return ev.isAfter(now) && ev.diff(now, "day") <= 7;
-      if (timeFilter === "next_3months")
-        return ev.isAfter(now) && ev.diff(now, "month") <= 3;
+      if (timeFilter === "past_day")    return ev.isBefore(now) && now.diff(ev, "hour")  <= 24;
+      if (timeFilter === "past_3days")  return ev.isBefore(now) && now.diff(ev, "day")   <= 3;
+      if (timeFilter === "past_week")   return ev.isBefore(now) && now.diff(ev, "day")   <= 7;
+      if (timeFilter === "past_3months")return ev.isBefore(now) && now.diff(ev, "month") <= 3;
+      if (timeFilter === "next_day")    return ev.isAfter(now)   && ev.diff(now, "hour")  <= 24;
+      if (timeFilter === "next_3days")  return ev.isAfter(now)   && ev.diff(now, "day")   <= 3;
+      if (timeFilter === "next_week")   return ev.isAfter(now)   && ev.diff(now, "day")   <= 7;
+      if (timeFilter === "next_3months")return ev.isAfter(now)   && ev.diff(now, "month") <= 3;
       return true;
     })
     .filter(e => {
@@ -225,7 +217,10 @@ export default function Home() {
                   overflow: "hidden",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   cursor: "pointer",
-                  transition: "transform .2s"
+                  transition: "transform .2s",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 360  // ensure taller cards
                 }}
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.02)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
@@ -233,10 +228,16 @@ export default function Home() {
                 <img
                   src={`/${ev.location}.jpg`}
                   alt={ev.location}
-                  style={{ width: "100%", height: 180, objectFit: "cover" }}
+                  style={{ width: "100%", height: 200, objectFit: "cover" }}
                   onError={e => (e.currentTarget.src = "/default.jpg")}
                 />
-                <div style={{ padding: 16 }}>
+                <div style={{ padding: 16, flex: 1 }}>
+                  {/* address under image */}
+                  {ev.address && (
+                    <p style={{ margin: 0, color: "#999", fontSize: 14, marginBottom: 8 }}>
+                      {ev.address}
+                    </p>
+                  )}
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold" }}>
                     {ev.title}
                   </h3>

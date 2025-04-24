@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getEventById } from "@/utils/eventApi";
 import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
 import { Spin } from "antd";
-import Button from "antd/lib/button/button";
+import Button from "antd/lib/button";
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,12 +16,12 @@ export default function EventDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    getEventById(id as string)
+    getEventById(id)
       .then(setEvent)
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <Spin className="mt-10" />;
+  if (loading) return <Spin className="mt-20" />;
 
   if (!event) {
     router.push("/404");
@@ -31,43 +31,81 @@ export default function EventDetailPage() {
   return (
     <>
       <NavBar />
+      <main className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Event image */}
+          <img
+            src={`/${event.location}.jpg`}
+            alt={event.location}
+            onError={e =>
+              ((e.target as HTMLImageElement).style.display = "none")
+            }
+            className="w-full h-64 object-cover"
+          />
+          <div className="p-6 space-y-4">
+            {/* Title & meta */}
+            <h1 className="text-3xl font-bold text-gray-900">
+              {event.title}
+            </h1>
+            <p className="text-gray-600">
+              {dayjs(event.date).format("MMMM D, YYYY")} • {event.time} •{" "}
+              {event.location}
+            </p>
+            {/* Address */}
+            {event.address && (
+              <p className="text-gray-600">
+                <strong>Address:</strong> {event.address}
+              </p>
+            )}
 
-      <main className="max-w-3xl mx-auto p-6 space-y-6">
-        <Button type="link" onClick={() => history.back()} style={{ paddingLeft: 0 }}>
-          ← Back to all events
-        </Button>
+            {/* Description */}
+            <section className="space-y-2">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Description
+              </h2>
+              <p className="text-gray-700">
+                {event.description || "No description provided."}
+              </p>
+            </section>
 
-        <header className="space-y-1">
-          <h1 className="text-3xl font-bold">{event.title}</h1>
-          <p className="text-gray-600">
-            {dayjs(event.date).format("MMMM D, YYYY")} • {event.time} • {event.location}
-          </p>
-        </header>
+            {/* Food */}
+            <section className="space-y-2">
+              <h2 className="text-xl font-semibold text-gray-800">Food</h2>
+              <p className="text-gray-700">{event.food || "N/A"}</p>
+            </section>
 
-        {/* optional image */}
-        <img
-          src={`/${event.location}.jpg`}
-          onError={(e) => (e.currentTarget.style.display = "none")}
-          alt=""
-          className="w-full h-64 object-cover rounded-xl shadow"
-        />
+            {/* Dietary chips */}
+            {event.dietary?.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Dietary Options
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {event.dietary.map((d: string) => (
+                    <span
+                      key={d}
+                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
+                    >
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
 
-        <section className="prose max-w-none">
-          <h2>Description</h2>
-          <p>{event.description || "No description provided."}</p>
-
-          <h2>Food</h2>
-          <p>{event.food || "N/A"}</p>
-
-          {event.dietary?.length > 0 && (
-            <>
-              <h2>Dietary Options</h2>
-              <ul>{event.dietary.map((d: string) => <li key={d}>{d}</li>)}</ul>
-            </>
-          )}
-        </section>
+        {/* Back button */}
+        <div className="max-w-3xl mx-auto mt-6">
+          <Button
+            type="primary"
+            style={{ background: "#CC0000", borderColor: "#CC0000", color: "#fff" }}
+            onClick={() => router.push("/")}
+          >
+            ← Back to all events
+          </Button>
+        </div>
       </main>
     </>
   );
-
 }
