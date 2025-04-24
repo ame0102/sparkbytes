@@ -8,6 +8,7 @@ import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
 import { supabase } from "@/utils/supabaseClient";
 import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
+import Link from "next/link";
 
 export default function Home() {
   const router = useRouter();
@@ -130,6 +131,7 @@ export default function Home() {
   
         <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", marginTop: "30px" }}>
           {events.map((event) => (
+            <Link key={event.id} href={`/event/${event.id}`} style={{ textDecoration: "none", color: "inherit" }}>
             <div
               key={event.id}
               style={{
@@ -140,7 +142,11 @@ export default function Home() {
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 display: "flex",
                 flexDirection: "column",
+                cursor: "pointer",
+                transition: "transform 0.2s",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
               {/* Top Image */}
               <img
@@ -212,6 +218,7 @@ export default function Home() {
                 </div>
               )}
             </div>
+            </Link>
           ))}
         </div>
   
