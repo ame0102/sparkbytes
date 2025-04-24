@@ -162,7 +162,7 @@ export default function Home() {
 
               {/* Content */}
               <div style={{ padding: "16px", flex: 1 }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "6px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "6px", color: "black" }}>
                   {event.title}
                 </h3>
 
