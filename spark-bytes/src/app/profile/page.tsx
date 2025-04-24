@@ -1,123 +1,258 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
-import NavBar from "@/components/NavBar";
+import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { UserOutlined } from "@ant-design/icons";
 
+import NavBar from "@/components/NavBar";
+
 export default function ProfilePage() {
   const router = useRouter();
-
   const [user, setUser] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: "", email: "", bio: "", phone: "", location: "" });
+
+  // profile form
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    bio: "",
+    phone: "",
+    location: "",
+  });
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
+  // my events
   const [myEvents, setMyEvents] = useState<any[]>([]);
-  const [evtLoading, setEvtLoading] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
+  // fetch user & profile
   useEffect(() => {
     (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth?.user) { router.push("/login"); return; }
-
-      setUser(auth.user);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setUser(user);
       setFormData({
-        name: auth.user.user_metadata?.name ?? "",
-        email: auth.user.email ?? "",
-        bio: auth.user.user_metadata?.bio ?? "",
-        phone: auth.user.user_metadata?.phone ?? "",
-        location: auth.user.user_metadata?.location ?? "",
+        name: user.user_metadata?.name ?? "",
+        email: user.email ?? "",
+        bio: user.user_metadata?.bio ?? "",
+        phone: user.user_metadata?.phone ?? "",
+        location: user.user_metadata?.location ?? "",
       });
-
-      const { data, error } = await supabase.from("events").select("*").eq("user_id", auth.user.id).order("date", { ascending: false });
-      if (!error) setMyEvents(data || []);
-      setEvtLoading(false);
     })();
   }, [router]);
 
+  // fetch user's events
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setLoadingEvents(true);
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: true });
+      if (!error) setMyEvents(data || []);
+      setLoadingEvents(false);
+    })();
+  }, [user]);
+
+  // save profile
   const handleSave = async () => {
-    if (!formData.name.trim()) { alert("Name is required"); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ data: { name: formData.name, bio: formData.bio, phone: formData.phone, location: formData.location } });
-    if (!error) setIsEditing(false); else alert(error.message);
-    setLoading(false);
+    if (!formData.name.trim()) {
+      alert("Name is required");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({
+      data: { ...formData },
+    });
+    setSaving(false);
+    if (error) {
+      alert("Update failed");
+    } else {
+      setIsEditing(false);
+    }
   };
 
-  const handleDeleteEvent = async (id: string) => {
+  // delete event
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this event?")) return;
-    const { error } = await supabase.from("events").delete().eq("id", id);
-    if (!error) setMyEvents((prev) => prev.filter((e) => e.id !== id)); else alert(error.message);
+    await supabase.from("events").delete().eq("id", id);
+    setMyEvents((e) => e.filter((ev) => ev.id !== id));
   };
 
-  if (!user) return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
+  // edit event
+  const handleEdit = (id: string) => {
+    router.push(`/event/${id}/edit`);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <NavBar />
 
-      <main className="flex-1 p-6 flex flex-col items-center gap-8">
-        <div className="bg-white rounded-lg shadow-sm border w-full max-w-md p-8">
-          <div className="text-center mb-8">
-            <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center rounded-full border border-[#CC0000] bg-white">
-              <UserOutlined style={{ fontSize: 40, color: "#CC0000" }} />
+      <div className="max-w-7xl mx-auto py-10 px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* PROFILE CARD */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="bg-red-600 h-12" />
+          <div className="p-6 space-y-6">
+            {/* avatar */}
+            <div className="w-24 h-24 mx-auto flex items-center justify-center rounded-full border-2 border-red-600 bg-white -mt-12">
+              <UserOutlined style={{ fontSize: 36, color: "#CC0000" }} />
             </div>
 
+            {/* profile info */}
             {isEditing ? (
               <div className="space-y-4">
-                <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full p-2.5 border rounded-lg" placeholder="Full Name" />
-                <input value={formData.email} disabled className="w-full p-2.5 border rounded-lg bg-gray-100" />
-                <textarea value={formData.bio} onChange={(e) => setFormData({ ...formData, bio: e.target.value })} rows={3} className="w-full p-2.5 border rounded-lg" placeholder="Bio" />
-                <input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full p-2.5 border rounded-lg" placeholder="Phone" />
-                <input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} className="w-full p-2.5 border rounded-lg" placeholder="Location" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
+                  placeholder="Name"
+                />
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
+                  rows={3}
+                  placeholder="Bio"
+                />
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
+                  placeholder="Phone"
+                />
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300"
+                  placeholder="Location"
+                />
               </div>
             ) : (
-              <>
-                <h2 className="text-xl font-semibold text-gray-800">{formData.name || "No name"}</h2>
-                <p className="text-gray-500">{formData.email}</p>
-                {formData.bio && <p className="text-gray-600 text-sm mt-2">{formData.bio}</p>}
-                {formData.phone && <p className="text-gray-500 mt-2">{formData.phone}</p>}
-                {formData.location && <p className="text-gray-500">{formData.location}</p>}
-              </>
+              <div className="text-center space-y-2">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {formData.name || "-"}
+                </h2>
+                <p className="text-gray-600">{formData.email}</p>
+                {formData.bio && (
+                  <p className="text-gray-700">{formData.bio}</p>
+                )}
+                {formData.phone && (
+                  <p className="text-gray-600">{formData.phone}</p>
+                )}
+                {formData.location && (
+                  <p className="text-gray-600">{formData.location}</p>
+                )}
+              </div>
+            )}
+
+            {/* profile actions */}
+            <div className="flex gap-4">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                    disabled={saving}
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full py-2 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* MY EVENTS */}
+        <div className="md:col-span-2">
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+              My Events
+            </h3>
+
+            {loadingEvents ? (
+              <p>Loading your events…</p>
+            ) : myEvents.length === 0 ? (
+              <p className="text-gray-600">
+                You haven’t posted any events yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {myEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-lg font-medium text-gray-900">
+                        {ev.title}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {dayjs(ev.date).format("MMM D, YYYY")} · {ev.time}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(ev.id)}
+                        className="px-3 py-1 bg-sky-100 text-sky-700 border border-sky-300 rounded-lg hover:bg-sky-200"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ev.id)}
+                        className="px-3 py-1 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-
-          {isEditing ? (
-            <div className="flex gap-3">
-              <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 py-3 rounded-lg">Cancel</button>
-              <button onClick={handleSave} disabled={loading} className="flex-1 bg-[#CC0000] text-white py-3 rounded-lg">{loading ? "Saving…" : "Save"}</button>
-            </div>
-          ) : (
-            <button onClick={() => setIsEditing(true)} className="w-full bg-[#CC0000] text-white py-3 rounded-lg">Edit Profile</button>
-          )}
         </div>
-
-        <div className="w-full max-w-4xl">
-          <h3 className="text-lg font-semibold mb-4">My Events</h3>
-          {evtLoading ? (
-            <p>Loading events…</p>
-          ) : myEvents.length === 0 ? (
-            <p className="text-gray-500">You haven't posted any events yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {myEvents.map((evt) => (
-                <div key={evt.id} className="border rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{evt.title}</p>
-                    <p className="text-sm text-gray-500">{dayjs(evt.date).format("MMM D, YYYY")}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => router.push(`/event/edit/${evt.id}`)} className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md">Edit</button>
-                    <button onClick={() => handleDeleteEvent(evt.id)} className="px-3 py-1 text-sm text-white bg-red-600 rounded-md">Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
