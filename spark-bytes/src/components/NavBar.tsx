@@ -22,7 +22,6 @@ const NavBar = () => {
     typeof window !== "undefined" ? window.innerWidth : 0
   );
 
-  /* auth + resize */
   useEffect(() => {
     (async () => {
       const user = await getCurrentUser();
@@ -40,12 +39,12 @@ const NavBar = () => {
       }
     })();
 
-    const handleResize = () => {
+    const onResize = () => {
       setWindowWidth(window.innerWidth);
       if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const handleLogin = () => router.push("/login");
@@ -60,7 +59,11 @@ const NavBar = () => {
       <Menu.Item key="profile" onClick={() => router.push("/profile")}>
         My Profile
       </Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
+      <Menu.Item
+        key="logout"
+        icon={<LogoutOutlined />}
+        onClick={handleLogout}
+      >
         Logout
       </Menu.Item>
     </Menu>
@@ -82,13 +85,18 @@ const NavBar = () => {
       style={{ paddingLeft: "1in", paddingRight: "1in" }}
     >
       <div className="flex justify-between items-center h-16">
-        {/* brand: plain anchor for full reload */}
+        {/* Brand / Home link (full reload) */}
         <a
           href="/"
-          className="flex items-center text-white text-xl font-bold"
+          style={{ color: "#fff", textDecoration: "none" }}
+          className="flex items-center text-xl font-bold"
         >
           {windowWidth < 640 ? (
-            <img src="/logo.png" alt="Logo" className="h-10 w-10 rounded-full" />
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-10 w-10 rounded-full"
+            />
           ) : (
             <>
               <img
@@ -101,10 +109,9 @@ const NavBar = () => {
           )}
         </a>
 
-        {/* desktop nav */}
+        {/* Desktop links + user */}
         {isDesktop && (
           <div className="flex items-center space-x-6">
-            {/* links */}
             <div className="flex space-x-4">
               {[
                 { href: "/", label: "Home" },
@@ -113,7 +120,8 @@ const NavBar = () => {
                 <a
                   key={href}
                   href={href}
-                  className={`cursor-pointer text-white ${
+                  style={{ color: "#fff" }}
+                  className={`cursor-pointer ${
                     pathname === href ? "font-bold" : "font-medium"
                   } hover:text-gray-200`}
                 >
@@ -122,12 +130,11 @@ const NavBar = () => {
               ))}
             </div>
 
-            {/* user */}
             {isLoggedIn ? (
               <Dropdown overlay={userMenu} placement="bottomRight">
-                <div className="flex items-center cursor-pointer bg-white rounded-full px-3 py-1 shadow-sm space-x-2">
+                <div className="flex items-center bg-white rounded-full px-3 py-1 shadow-sm space-x-2 cursor-pointer">
                   {avatarEl}
-                  <span className="text-[#CC0000] font-medium whitespace-nowrap max-w-[120px] truncate">
+                  <span className="text-[#CC0000] font-medium truncate max-w-[120px]">
                     {userName}
                   </span>
                 </div>
@@ -144,7 +151,7 @@ const NavBar = () => {
           </div>
         )}
 
-        {/* mobile controls */}
+        {/* Mobile menu */}
         {!isDesktop && (
           <div className="flex items-center space-x-2">
             {isLoggedIn ? (
@@ -155,13 +162,13 @@ const NavBar = () => {
               <Button
                 onClick={handleLogin}
                 icon={<UserOutlined style={{ color: "#CC0000" }} />}
-                className="bg-white text-[#CC0000] text-sm px-3 py-1"
+                className="bg-white text-[#CC0000] px-3 py-1 text-sm"
               >
                 {windowWidth > 380 ? "Login" : ""}
               </Button>
             )}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen((o) => !o)}
               className="text-white p-1"
             >
               <MenuOutlined style={{ fontSize: 20 }} />
@@ -170,7 +177,7 @@ const NavBar = () => {
         )}
       </div>
 
-      {/* mobile drawer */}
+      {/* Mobile drawer */}
       {!isDesktop && isMobileMenuOpen && (
         <div className="border-t border-[#A00000] py-3">
           <div className="space-y-2 px-2">
@@ -181,8 +188,9 @@ const NavBar = () => {
               <a
                 key={href}
                 href={href}
+                style={{ color: "#fff" }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-white ${
+                className={`block px-3 py-2 rounded-md ${
                   pathname === href
                     ? "font-bold bg-[#A00000]"
                     : "font-medium"
@@ -195,8 +203,9 @@ const NavBar = () => {
             {!isLoggedIn ? (
               <a
                 href="/login"
+                style={{ color: "#fff" }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-md text-white font-medium hover:bg-[#A00000]"
+                className="block px-3 py-2 rounded-md font-medium hover:bg-[#A00000]"
               >
                 Login
               </a>
@@ -204,8 +213,9 @@ const NavBar = () => {
               <>
                 <a
                   href="/profile"
+                  style={{ color: "#fff" }}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-white font-medium hover:bg-[#A00000]"
+                  className="block px-3 py-2 rounded-md font-medium hover:bg-[#A00000]"
                 >
                   My Profile
                 </a>
