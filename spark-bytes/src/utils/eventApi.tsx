@@ -40,3 +40,13 @@ export async function getAllEvents() {
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function getEventById(id: string) {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
