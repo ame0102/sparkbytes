@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { message } from "antd";
+import { InputNumber, message } from "antd";
 import Modal from "antd/lib/modal";
 import Form from "antd/lib/form";
 import Input from "antd/lib/input";
@@ -91,6 +91,8 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         dietary: values.dietary,
         dietaryComment: values.dietaryComment || null,
         food: values.food,
+        portions: values.portions,
+        ended: false
       };
 
       console.log("Submitting event:", eventData);
@@ -214,6 +216,26 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       >
         <TextArea rows={4} placeholder="Enter all food availability" />
       </FormItem>
+
+      <FormItem
+        name="portions"
+        label="Number of Portions"
+        rules={[
+          { required: true, message: "Please enter how many portions will be available" },
+          {
+            type: "number",
+            min: 1,
+            message: "Portions must be at least 1",
+          },
+        ]}
+      >
+        <InputNumber
+          min={1}
+          placeholder="e.g. 50"
+          style={{ width: "100%" }}
+        />
+      </FormItem>
+
 
       <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
         <CustomButton onClick={onClose} text="Cancel" />
