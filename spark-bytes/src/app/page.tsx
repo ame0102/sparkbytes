@@ -11,6 +11,7 @@ import { SearchOutlined } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
 import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
+import { EnvironmentOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 
@@ -234,19 +235,31 @@ export default function Home() {
                 <div style={{ padding: 16, flex: 1 }}>
                   {/* address under image */}
                   {ev.address && (
-                    <p style={{ margin: 0, color: "#999", fontSize: 14, marginBottom: 8 }}>
+                    <p style={{ margin: 0, color: "#999", fontSize: 14, marginBottom: 8,  textOverflow: "ellipsis", }}>
+                      <EnvironmentOutlined style={{ marginRight: 4 }} />
                       {ev.address}
                     </p>
                   )}
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold" }}>
                     {ev.title}
                   </h3>
-                  <p style={{ margin: "4px 0", color: "#555" }}>
-                    <strong>When:</strong> {fmt(ev.date)} · {ev.time}
+                  <p style={{ margin: "4px 0", color: "#555", fontSize: 12}}>
+                    {fmt(ev.date)} · {ev.time}
                   </p>
-                  <p style={{ margin: "4px 0", color: "#555" }}>
-                    <strong>Where:</strong> {ev.location}
-                  </p>
+
+                  <p
+                   style={{
+                     margin: "4px 0",
+                     whiteSpace: "nowrap",
+                     overflow: "hidden",
+                     textOverflow: "ellipsis",
+                     maxWidth: "100%",
+                     fontSize: "14px",
+                     color: "#555"
+                   }}
+                 >
+                   <strong>Food Available:</strong> {ev.food}
+                 </p>
 
                   {/* dietary chips */}
                   {ev.dietary?.length > 0 && (
