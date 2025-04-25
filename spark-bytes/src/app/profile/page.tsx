@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [endingEventId, setEndingEventId] = useState<string | null>(null);
 
   // my events
   const [myEvents, setMyEvents] = useState<any[]>([]);
@@ -82,13 +83,6 @@ export default function ProfilePage() {
     }
   };
 
-  // end event
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to end this event?")) return;
-    await supabase.from("events").delete().eq("id", id);
-    setMyEvents((e) => e.filter((ev) => ev.id !== id));
-  };
-
   // edit event
   const handleEdit = (id: string) => {
     setEditingEventId(id);
@@ -101,6 +95,26 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  // end event
+  const handleEndEvent = async () => {
+    if (!endingEventId) return;
+  
+    const { error } = await supabase
+      .from("events")
+      .update({ ended: true })
+      .eq("id", endingEventId);
+  
+    if (!error) {
+      setMyEvents((prev) =>
+        prev.map((ev) =>
+          ev.id === endingEventId ? { ...ev, ended: true } : ev
+        )
+      );
+    }
+  
+    setEndingEventId(null);
+  };  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -233,36 +247,42 @@ export default function ProfilePage() {
                         {dayjs(ev.date).format("MMM D, YYYY")} · {ev.time}
                       </p>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(ev.id)}
-                        className="px-3 py-1 bg-sky-100 text-sky-700 border border-sky-300 rounded-lg hover:bg-sky-200"
-                      >
-                        Edit
-                      </button>
+                    <div className="flex space-x-2 items-center">
+                      {!ev.ended ? (
+                        <>
+                          <button
+                            onClick={() => handleEdit(ev.id)}
+                            className="px-3 py-1 bg-sky-100 text-sky-700 border border-sky-300 rounded-lg hover:bg-sky-200"
+                          >
+                            Edit
+                          </button>
 
-                      <EditEventModal
-                        isOpen={!!editingEventId}
-                        eventId={editingEventId}
-                        onClose={() => setEditingEventId(null)}
-                        onEventUpdated={async () => {
-                          setLoadingEvents(true);
-                          const { data } = await supabase
-                            .from("events")
-                            .select("*")
-                            .eq("user_id", user.id)
-                            .order("date", { ascending: true });
-                          setMyEvents(data || []);
-                          setLoadingEvents(false);
-                        }}
-                      />
+                          <EditEventModal
+                            isOpen={!!editingEventId}
+                            eventId={editingEventId}
+                            onClose={() => setEditingEventId(null)}
+                            onEventUpdated={async () => {
+                              setLoadingEvents(true);
+                              const { data } = await supabase
+                                .from("events")
+                                .select("*")
+                                .eq("user_id", user.id)
+                                .order("date", { ascending: true });
+                              setMyEvents(data || []);
+                              setLoadingEvents(false);
+                            }}
+                          />
 
-                      <button
-                        onClick={() => handleDelete(ev.id)}
-                        className="px-3 py-1 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200"
-                      >
-                        End
-                      </button>
+                          <button
+                            onClick={() => setEndingEventId(ev.id)}
+                            className="px-3 py-1 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200"
+                          >
+                            End
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-red-600 font-semibold">(Ended)</span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -271,6 +291,29 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+            {endingEventId && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg space-y-4 max-w-sm w-full">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Are you sure you want to end this event?
+            </h2>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setEndingEventId(null)}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                No
+              </button>
+              <button
+                onClick={handleEndEvent}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
