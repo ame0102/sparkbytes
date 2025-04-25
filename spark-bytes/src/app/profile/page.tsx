@@ -5,7 +5,7 @@ import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { UserOutlined } from "@ant-design/icons";
-
+import EditEventModal from "@/components/EditEventModal";
 import NavBar from "@/components/NavBar";
 
 export default function ProfilePage() {
@@ -22,6 +22,7 @@ export default function ProfilePage() {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   // my events
   const [myEvents, setMyEvents] = useState<any[]>([]);
@@ -81,16 +82,16 @@ export default function ProfilePage() {
     }
   };
 
-  // delete event
+  // end event
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this event?")) return;
+    if (!confirm("Are you sure you want to end this event?")) return;
     await supabase.from("events").delete().eq("id", id);
     setMyEvents((e) => e.filter((ev) => ev.id !== id));
   };
 
   // edit event
   const handleEdit = (id: string) => {
-    router.push(`/event/${id}/edit`);
+    setEditingEventId(id);
   };
 
   if (!user) {
@@ -239,11 +240,28 @@ export default function ProfilePage() {
                       >
                         Edit
                       </button>
+
+                      <EditEventModal
+                        isOpen={!!editingEventId}
+                        eventId={editingEventId}
+                        onClose={() => setEditingEventId(null)}
+                        onEventUpdated={async () => {
+                          setLoadingEvents(true);
+                          const { data } = await supabase
+                            .from("events")
+                            .select("*")
+                            .eq("user_id", user.id)
+                            .order("date", { ascending: true });
+                          setMyEvents(data || []);
+                          setLoadingEvents(false);
+                        }}
+                      />
+
                       <button
                         onClick={() => handleDelete(ev.id)}
                         className="px-3 py-1 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200"
                       >
-                        Delete
+                        End
                       </button>
                     </div>
                   </div>
