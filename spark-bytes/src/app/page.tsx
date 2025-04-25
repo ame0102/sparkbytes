@@ -38,7 +38,7 @@ export default function Home() {
 
   // pagination
   const [page, setPage] = useState(1);
-  const pageSize        = 10;
+  const pageSize        = 8;
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
