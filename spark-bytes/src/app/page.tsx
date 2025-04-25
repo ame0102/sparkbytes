@@ -287,6 +287,22 @@ export default function Home() {
                     {fmt(ev.date)} · {ev.time}
                   </p>
 
+                  {ev.portions !== undefined && (
+                  <p
+                    style={{
+                      margin: "4px 0",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "100%",
+                      fontSize: "14px",
+                      color: "#555"
+                    }}
+                  >
+                    <strong>Portions Left:</strong> {ev.portions}
+                  </p>
+                )}
+
                   <p
                    style={{
                      margin: "4px 0",
