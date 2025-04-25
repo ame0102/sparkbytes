@@ -235,12 +235,14 @@ export default function Home() {
                 <div style={{ padding: 16, flex: 1 }}>
                   {/* address under image */}
                   {ev.address && (
-                    <p style={{ margin: 0, color: "#999", fontSize: 14, marginBottom: 8,  textOverflow: "ellipsis", }}>
+                    <p style={{ margin: 0, color: "#999", fontSize: 14, marginBottom: 8,  whiteSpace: "nowrap",
+                      overflow: "hidden", textOverflow: "ellipsis", }}>
                       <EnvironmentOutlined style={{ marginRight: 4 }} />
                       {ev.address}
                     </p>
                   )}
-                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold" }}>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden",
+                    textOverflow: "ellipsis" }}>
                     {ev.title}
                   </h3>
                   <p style={{ margin: "4px 0", color: "#555", fontSize: 12}}>
