@@ -25,6 +25,8 @@ export async function createEvent(eventData: any) {
       dietary: eventData.dietary,
       dietary_comment: eventData.dietaryComment || null,
       user_id: userResponse.user.id,
+      portions: eventData.portions,
+      ended: false
     },
   ]);
 
