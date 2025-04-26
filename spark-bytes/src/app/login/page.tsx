@@ -309,18 +309,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
-
-              <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-                <button 
-                  onClick={handleGuestAccess}
-                  className="text-[#CC0000] hover:text-[#A00000] text-sm font-medium"
-                >
-                  Continue as Guest
-                </button>
-                <p className="text-xs text-gray-500 mt-1">
-                  Limited access to view upcoming events
-                </p>
-              </div>
             </div>
           </div>
 

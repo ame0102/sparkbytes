@@ -121,31 +121,7 @@ export default function Home() {
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   if (authChecked && unauth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
-        <div className="max-w-md w-full text-center border border-red-200 bg-red-50 p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
-          <p className="text-red-700 mb-4">Please log in to access the home page.</p>
-  
-          <div className="flex flex-col items-center gap-3">
-            <Button 
-              type="primary" 
-              style={{ backgroundColor: "#CC0000", borderColor: "#CC0000" }}
-              onClick={() => router.push('/login')}
-            >
-              Login
-            </Button>
-  
-            <button 
-              onClick={() => router.push('/guest')}
-              className="text-[#CC0000] underline text-sm mt-1 hover:text-[#A00000] transition-colors"
-            >
-              Continue as Guest
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    router.push('/login');
   }  
   
   return (
