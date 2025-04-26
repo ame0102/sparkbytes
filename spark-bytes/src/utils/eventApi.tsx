@@ -58,3 +58,61 @@ export async function getEventById(id: string) {
   if (error) throw error;
   return data;
 }
+
+export async function getFavoriteEventIds(): Promise<string[]> {
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("favorites")
+    .select("event_id")
+    .eq("user_id", (await supabase.auth.getUser())?.data.user?.id);
+
+  if (error) {
+    console.error("getFavoriteEventIds", error);
+    return [];
+  }
+
+  return data.map((row) => row.event_id as string);
+}
+
+export async function addFavorite(eventId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    console.error("User not found.");
+    return;
+  }
+
+  const { error } = await supabase.from("favorites").insert([
+    {
+      user_id: user.id,
+      event_id: eventId,
+    },
+  ]);
+
+  if (error) {
+    console.error("Error inserting favorite:", error.message);
+  } else {
+    console.log("Favorite added successfully");
+  }
+}
+
+export async function removeFavorite(eventId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    console.error("User not found.");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("favorites")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("event_id", eventId);
+
+  if (error) {
+    console.error("Error deleting favorite:", error.message);
+  } else {
+    console.log("Favorite removed successfully");
+  }
+}
