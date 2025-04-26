@@ -77,6 +77,14 @@ export default function LoginPage() {
    * Handles Boston University Single Sign-On authentication
    */
   const handleBUAuth = async () => {
+    setError('');
+    
+    // Validate BU email before continuing
+    if (!email.endsWith('@bu.edu')) {
+      setError('Please enter a valid BU email address ending with @bu.edu');
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({ email });
