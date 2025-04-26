@@ -7,7 +7,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { Button, Input, Select, Pagination } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import { BookOutlined, BookFilled } from "@ant-design/icons";
+import { StarOutlined, StarFilled } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
 import { getCurrentUser, getAllEvents, addFavorite, removeFavorite, getFavoriteEventIds } from "@/utils/eventApi";
@@ -47,6 +47,7 @@ export default function Home() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [favLoading, setFavLoading] = useState(false);
   const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [pulsingId, setPulsingId] = useState<string | null>(null);
 
   const fmt = (d: string) => dayjs(d).format("MMM. D, YYYY");
 
@@ -149,6 +150,16 @@ export default function Home() {
   
   return (
     <>
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.4); }
+          100% { transform: scale(1); }
+        }
+        .pulse {
+          animation: pulse 0.4s ease;
+        }
+      `}</style>
       <NavBar />
 
       <main
@@ -253,7 +264,7 @@ export default function Home() {
           }}
         >
           {paged.map(ev => (
-            <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none" }}>
+            <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none" }}> 
               <div
                 style={{
                   background: "#fff",
@@ -265,15 +276,19 @@ export default function Home() {
                   transition: "transform .2s",
                   display: "flex",
                   flexDirection: "column",
-                  minHeight: 360  // ensure taller cards
+                  minHeight: 360
                 }}
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.02)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
               >
                 <div
+                  className={pulsingId === ev.id ? "pulse" : ""}
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+
+                    setPulsingId(ev.id);
+                    setTimeout(() => setPulsingId(null), 400);
 
                     setFavLoading(true);
                     if (favoriteIds.includes(ev.id)) {
@@ -301,9 +316,9 @@ export default function Home() {
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                 >
                   {favoriteIds.includes(ev.id) ? (
-                    <BookFilled style={{ fontSize: 24, color: "#CC0000" }} />
+                    <StarFilled style={{ fontSize: 24, color: "#CC0000" }} />
                   ) : (
-                    <BookOutlined style={{ fontSize: 24, color: "#999" }} />
+                    <StarOutlined style={{ fontSize: 24, color: "#999" }} />
                   )}
                 </div>
 
