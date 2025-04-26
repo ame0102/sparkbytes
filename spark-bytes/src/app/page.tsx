@@ -7,10 +7,10 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { Button, Input, Select, Pagination } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-
+import { BookOutlined, BookFilled } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
-import { getCurrentUser, getAllEvents } from "@/utils/eventApi";
+import { getCurrentUser, getAllEvents, addFavorite, removeFavorite, getFavoriteEventIds } from "@/utils/eventApi";
 import { EnvironmentOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
@@ -42,6 +42,11 @@ export default function Home() {
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
+  
+  // favorites
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favLoading, setFavLoading] = useState(false);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
 
   const fmt = (d: string) => dayjs(d).format("MMM. D, YYYY");
 
@@ -59,9 +64,15 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const data = await getAllEvents(urlQuery);
+      setFavoritesLoading(true);
+      const [data, favs] = await Promise.all([
+        getAllEvents(urlQuery),
+        getFavoriteEventIds()
+      ]);
       setEvents(data || []);
+      setFavoriteIds(favs);
       setLoading(false);
+      setFavoritesLoading(false);
     })();
   }, [urlQuery]);
 
@@ -233,12 +244,6 @@ export default function Home() {
           </Select>
         </div>
 
-        {/* status */}
-        {loading && <p style={{ textAlign: "center", color: "#666" }}>Loading…</p>}
-        {!loading && total === 0 && (
-          <p style={{ textAlign: "center", color: "#666" }}>No events found.</p>
-        )}
-
         {/* events */}
         <div
           style={{
@@ -252,6 +257,7 @@ export default function Home() {
               <div
                 style={{
                   background: "#fff",
+                  position: "relative", 
                   borderRadius: 12,
                   overflow: "hidden",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -264,6 +270,43 @@ export default function Home() {
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.02)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
               >
+                <div
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    setFavLoading(true);
+                    if (favoriteIds.includes(ev.id)) {
+                      await removeFavorite(ev.id);
+                      setFavoriteIds(favoriteIds.filter((id) => id !== ev.id));
+                    } else {
+                      await addFavorite(ev.id);
+                      setFavoriteIds([...favoriteIds, ev.id]);
+                    }
+                    setFavLoading(false);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    left: 10,
+                    background: "white",
+                    borderRadius: "50%",
+                    padding: 8,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    zIndex: 2,
+                    cursor: "pointer",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  {favoriteIds.includes(ev.id) ? (
+                    <BookFilled style={{ fontSize: 24, color: "#CC0000" }} />
+                  ) : (
+                    <BookOutlined style={{ fontSize: 24, color: "#999" }} />
+                  )}
+                </div>
+
                 <img
                   src={`/${ev.location}.jpg`}
                   alt={ev.location}
