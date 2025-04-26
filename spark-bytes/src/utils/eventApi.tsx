@@ -116,3 +116,30 @@ export async function removeFavorite(eventId: string) {
     console.log("Favorite removed successfully");
   }
 }
+
+export async function getFavoriteEvents(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select(`
+      event_id,
+      events (
+        id,
+        title,
+        date,
+        time,
+        location,
+        address,
+        dietary,
+        food,
+        portions
+      )
+    `)
+    .eq("user_id", (await supabase.auth.getUser())?.data.user?.id);
+
+  if (error) {
+    console.error("getFavoriteEvents error", error);
+    return [];
+  }
+
+  return data.map((row) => row.events);
+}
