@@ -12,6 +12,8 @@ import NavBar from "@/components/NavBar";
 import CreateEventModal from "@/components/CreateEventModal";
 import { getCurrentUser, getAllEvents, addFavorite, removeFavorite, getFavoriteEventIds } from "@/utils/eventApi";
 import { EnvironmentOutlined } from "@ant-design/icons";
+import { Dropdown, Menu } from "antd";
+import { FilterOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 
@@ -165,71 +167,106 @@ export default function Home() {
         </div>
 
         {/* filters */}
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-            marginBottom: "1.5rem"
-          }}
-        >
-          <Input
-            size="large"
-            value={query}
-            onChange={onSearchChange}
-            placeholder="Search titles…"
-            allowClear
-            prefix={<SearchOutlined style={{ color: "#888" }} />}
-            style={{ width: 300, borderRadius: 8 }}
-          />
-
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Locations"
-            value={locFilter}
-            onChange={setLocFilter}
-            style={{ width: 220 }}
-            maxTagCount={2}
-            maxTagPlaceholder={omitted => `+${omitted.length} more`}
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+              marginBottom: "1.5rem"
+            }}
           >
-            {locations.map(loc => (
-              <Option key={loc} value={loc}>{loc}</Option>
-            ))}
-          </Select>
+            <Input
+              size="large"
+              value={query}
+              onChange={onSearchChange}
+              placeholder="Search titles…"
+              allowClear
+              prefix={<SearchOutlined style={{ color: "#888" }} />}
+              style={{ width: 300, borderRadius: 8 }}
+            />
 
-          <Select
-            value={timeFilter}
-            onChange={setTimeFilter}
-            style={{ width: 220 }}
-          >
-            <Option value="all">All Time</Option>
-            <Option value="past_day">Past 1 Day</Option>
-            <Option value="past_3days">Past 3 Days</Option>
-            <Option value="past_week">Past 1 Week</Option>
-            <Option value="past_3months">Past 3 Months</Option>
-            <Option value="next_day">Next 1 Day</Option>
-            <Option value="next_3days">Next 3 Days</Option>
-            <Option value="next_week">Next 1 Week</Option>
-            <Option value="next_3months">Next 3 Months</Option>
-          </Select>
+            <Dropdown
+              trigger={["click"]}
+              overlay={
+                <Menu style={{ padding: 12, width: 280 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Location</strong>
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      placeholder="Select Locations"
+                      value={locFilter}
+                      onChange={setLocFilter}
+                      style={{ width: "100%", marginTop: 8 }}
+                      maxTagCount={2}
+                      maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
+                    >
+                      {locations.map(loc => (
+                        <Option key={loc} value={loc}>{loc}</Option>
+                      ))}
+                    </Select>
+                  </div>
 
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Dietary"
-            value={dietFilter}
-            onChange={setDietFilter}
-            style={{ width: 240 }}
-            maxTagCount={2}
-            maxTagPlaceholder={omitted => `+${omitted.length} more`}
-          >
-            {dietaryOptions.map(d => (
-              <Option key={d} value={d}>{d}</Option>
-            ))}
-          </Select>
-        </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Time</strong>
+                    <Select
+                      value={timeFilter}
+                      onChange={setTimeFilter}
+                      style={{ width: "100%", marginTop: 8 }}
+                    >
+                      <Option value="all">All Time</Option>
+                      <Option value="past_day">Past 1 Day</Option>
+                      <Option value="past_3days">Past 3 Days</Option>
+                      <Option value="past_week">Past 1 Week</Option>
+                      <Option value="past_3months">Past 3 Months</Option>
+                      <Option value="next_day">Next 1 Day</Option>
+                      <Option value="next_3days">Next 3 Days</Option>
+                      <Option value="next_week">Next 1 Week</Option>
+                      <Option value="next_3months">Next 3 Months</Option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <strong>Dietary</strong>
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      placeholder="Select Dietary Preferences"
+                      value={dietFilter}
+                      onChange={setDietFilter}
+                      style={{ width: "100%", marginTop: 8 }}
+                      maxTagCount={2}
+                      maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
+                    >
+                      {dietaryOptions.map(d => (
+                        <Option key={d} value={d}>{d}</Option>
+                      ))}
+                    </Select>
+                  </div>
+                  {/* Reset button */}
+                  <div style={{ marginTop: 16, textAlign: "right" }}>
+                    <Button
+                      type="default"
+                      size="small"
+                      onClick={() => {
+                        setLocFilter([]);
+                        setTimeFilter("all");
+                        setDietFilter([]);
+                      }}
+                    >
+                      Reset Filters
+                    </Button>
+                  </div>
+                </Menu>
+              }
+            >
+              <Button size="large" icon={<FilterOutlined />} style={{ borderRadius: 8 }}>
+                Filters
+              </Button>
+            </Dropdown>
+          </div>
+
 
         {/* events */}
         <div
