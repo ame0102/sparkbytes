@@ -103,10 +103,7 @@ export default function Home() {
     .filter(e => {
       if (timeFilter === "all") return true;
       const ev = dayjs(e.date);
-      if (timeFilter === "past_day")    return ev.isBefore(now) && now.diff(ev, "hour")  <= 24;
-      if (timeFilter === "past_3days")  return ev.isBefore(now) && now.diff(ev, "day")   <= 3;
-      if (timeFilter === "past_week")   return ev.isBefore(now) && now.diff(ev, "day")   <= 7;
-      if (timeFilter === "past_3months")return ev.isBefore(now) && now.diff(ev, "month") <= 3;
+      if (timeFilter === "current") return ev.isBefore(now) && !e.ended;
       if (timeFilter === "next_day")    return ev.isAfter(now)   && ev.diff(now, "hour")  <= 24;
       if (timeFilter === "next_3days")  return ev.isAfter(now)   && ev.diff(now, "day")   <= 3;
       if (timeFilter === "next_week")   return ev.isAfter(now)   && ev.diff(now, "day")   <= 7;
@@ -209,10 +206,7 @@ export default function Home() {
                       style={{ width: "100%", marginTop: 8 }}
                     >
                       <Option value="all">All Time</Option>
-                      <Option value="past_day">Past 1 Day</Option>
-                      <Option value="past_3days">Past 3 Days</Option>
-                      <Option value="past_week">Past 1 Week</Option>
-                      <Option value="past_3months">Past 3 Months</Option>
+                      <Option value="current">Current</Option>
                       <Option value="next_day">Next 1 Day</Option>
                       <Option value="next_3days">Next 3 Days</Option>
                       <Option value="next_week">Next 1 Week</Option>
