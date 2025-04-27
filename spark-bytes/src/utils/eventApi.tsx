@@ -143,3 +143,45 @@ export async function getFavoriteEvents(): Promise<any[]> {
 
   return data.map((row) => row.events);
 }
+
+export async function getCommentsByEventId(eventId: string) {
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching comments:", error);
+    return [];
+  }
+  return data;
+}
+
+export async function postComment(eventId: string, content: string, parentId: string | null = null) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error("No user logged in", userError?.message);
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("comments")
+    .insert([
+      {
+        event_id: eventId,
+        user_id: user.id,
+        content: content,
+        parent_id: parentId
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error inserting comment:", error.message);
+    return null;
+  }
+
+  return data;
+}

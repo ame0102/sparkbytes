@@ -2,24 +2,135 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getEventById } from "@/utils/eventApi";
+import { getCommentsByEventId, getEventById, postComment } from "@/utils/eventApi";
 import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
-import { Spin } from "antd";
-import Button from "antd/lib/button";
+import { Spin, Input, Button } from "antd";
+import { supabase } from "@/utils/supabaseClient";
+
+const { TextArea } = Input;
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    getEventById(id)
-      .then(setEvent)
-      .finally(() => setLoading(false));
+    Promise.all([
+      getEventById(id),
+      getCommentsByEventId(id)
+    ]).then(([eventData, commentsData]) => {
+      setEvent(eventData);
+      setComments(commentsData);
+    }).finally(() => setLoading(false));
   }, [id]);
+
+  const handlePostComment = async (parentId: string | null = null) => {
+    if (newComment.trim() === "") return;
+    const posted = await postComment(id!, newComment, parentId);
+    if (posted) {
+      setComments(prev => [...prev, posted]);
+      setNewComment("");
+      setReplyingTo(null);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this comment?");
+    if (!confirmed) return;
+  
+    console.log("Trying to delete comment:", commentId);
+  
+    const { data, error } = await supabase
+      .from("comments")
+      .update({ deleted: true })
+      .eq("id", commentId)
+      .select();
+  
+    if (error) {
+      console.error("Error deleting comment:", error.message);
+      return;
+    }
+  
+    console.log("Deleted comment response:", data);
+  
+    setComments(prev =>
+      prev.map(c => (c.id === commentId ? { ...c, deleted: true } : c))
+    );
+  };
+  
+
+  const renderComments = (parentId: string | null = null, level = 0) => {
+    const filtered = comments.filter(c => c.parent_id === parentId);
+
+    return (
+      <div className={`space-y-4 ${level > 0 ? 'pl-6 border-l-2 border-gray-300' : ''}`}>
+        {filtered.map(comment => (
+          <div key={comment.id}>
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <p className="text-gray-800">
+                {comment.deleted ? (
+                  <em className="text-gray-400">This comment has been deleted.</em>
+                ) : (
+                  comment.content
+                )}
+              </p>
+              <p className="text-sm text-gray-500">
+                {dayjs(comment.created_at).format('MMM D, YYYY h:mm A')}
+              </p>
+
+              <Button
+                size="small"
+                type="link"
+                onClick={() => setReplyingTo(comment.id)}
+                className="p-0 mt-1"
+              >
+                Reply
+              </Button>
+
+              {/* Only show Delete button if not deleted */}
+              {!comment.deleted && (
+                <Button
+                  size="small"
+                  type="link"
+                  danger
+                  onClick={() => handleDeleteComment(comment.id)}
+                  className="p-0 mt-1"
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
+
+            {replyingTo === comment.id && (
+              <div className="mt-2 flex flex-col gap-2">
+                <TextArea
+                  rows={2}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Write your reply..."
+                />
+                <div className="flex gap-2">
+                  <Button type="primary" onClick={() => handlePostComment(comment.id)}>
+                    Post Reply
+                  </Button>
+                  <Button onClick={() => { setReplyingTo(null); setNewComment(""); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+            {renderComments(comment.id, level + 1)}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   if (loading) return <Spin className="mt-20" />;
 
@@ -94,6 +205,32 @@ export default function EventDetailPage() {
             )}
           </div>
         </div>
+
+        {/* COMMENTS SECTION */}
+        <div className="p-6 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800">Comments</h2>
+            <div className="flex flex-col gap-2">
+              <TextArea
+                rows={4}
+                value={replyingTo ? "" : newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a new comment..."
+                disabled={replyingTo !== null}
+              />
+              {!replyingTo && (
+                <Button
+                  type="primary"
+                  style={{ backgroundColor: "#CC0000", borderColor: "#CC0000" }}
+                  onClick={() => handlePostComment(null)}
+                >
+                  Post Comment
+                </Button>
+              )}
+            </div>
+
+            {/* Render all comments */}
+            {renderComments()}
+          </div>
 
         {/* Back button */}
         <div className="max-w-3xl mx-auto mt-6">
