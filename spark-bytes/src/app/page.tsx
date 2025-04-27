@@ -157,25 +157,19 @@ export default function Home() {
           }}
         >
           <h2 style={{ fontSize: 28, fontWeight: "bold" }}>Events</h2>
-          <Button
-            type="primary"
-            style={{ background: "#CC0000" }}
-            onClick={() => setShowCreate(true)}
-          >
-            + Create Event
-          </Button>
         </div>
 
         {/* filters */}
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-              alignItems: "center",
-              marginBottom: "1.5rem"
-            }}
-          >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
             <Input
               size="large"
               value={query}
@@ -185,7 +179,6 @@ export default function Home() {
               prefix={<SearchOutlined style={{ color: "#888" }} />}
               style={{ width: 300, borderRadius: 8 }}
             />
-
             <Dropdown
               trigger={["click"]}
               overlay={
@@ -267,6 +260,15 @@ export default function Home() {
             </Dropdown>
           </div>
 
+          {/* Create Event Button */}
+          <Button
+            type="primary"
+            style={{ background: "#CC0000", marginTop: "0.5rem" }}
+            onClick={() => setShowCreate(true)}
+          >
+            + Create Event
+          </Button>
+        </div>
 
         {/* events */}
         <div
