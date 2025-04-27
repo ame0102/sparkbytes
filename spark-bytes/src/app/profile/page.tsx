@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { UserOutlined } from "@ant-design/icons";
 import EditEventModal from "@/components/EditEventModal";
 import NavBar from "@/components/NavBar";
+import { DownOutlined } from "@ant-design/icons";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function ProfilePage() {
   // my events
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [filterMode, setFilterMode] = useState<"active" | "all">("active");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // fetch user & profile
   useEffect(() => {
@@ -115,6 +118,13 @@ export default function ProfilePage() {
   
     setEndingEventId(null);
   };  
+
+  const now = dayjs();
+
+  const filteredEvents = myEvents.filter(ev => {
+    if (filterMode === "all") return true;
+    return dayjs(ev.date).isBefore(now) && !ev.ended;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -222,9 +232,34 @@ export default function ProfilePage() {
         {/* MY EVENTS */}
         <div className="md:col-span-2">
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-              My Events
-            </h3>
+            <div className="flex items-center justify-between mb-4 relative">
+              <div className="relative inline-block text-left">
+                <button
+                  onClick={() => setDropdownOpen((prev) => !prev)}
+                  className="flex items-center text-2xl font-semibold text-gray-800 hover:text-red-600 transition-colors"
+                >
+                  {filterMode === "active" ? "Active Events" : "All Events"}
+                  <DownOutlined className="ml-2 text-base" />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                    <button
+                      onClick={() => { setFilterMode("active"); setDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      Active Events
+                    </button>
+                    <button
+                      onClick={() => { setFilterMode("all"); setDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      All Events
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {loadingEvents ? (
               <p>Loading your events…</p>
@@ -234,7 +269,7 @@ export default function ProfilePage() {
               </p>
             ) : (
               <div className="space-y-4">
-                {myEvents.map((ev) => (
+                {filteredEvents.map((ev) => (
                   <div
                     key={ev.id}
                     className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between"
