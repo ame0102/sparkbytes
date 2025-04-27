@@ -7,6 +7,7 @@ import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
 import { Spin, Input, Button } from "antd";
 import { supabase } from "@/utils/supabaseClient";
+import { EnvironmentOutlined } from "@ant-design/icons";
 
 const { TextArea } = Input;
 
@@ -164,24 +165,22 @@ export default function EventDetailPage() {
             </p>
             {/* Address */}
             {event.address && (
-              <p className="text-gray-600">
-                <strong>Address:</strong> {event.address}
+              <p className="text-gray-600 flex items-center gap-2">
+                <EnvironmentOutlined style={{ marginRight: 4 }} />
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {event.address}
+                </a>
               </p>
             )}
 
-            {/* Description */}
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Description
-              </h2>
-              <p className="text-gray-700">
-                {event.description || "No description provided."}
-              </p>
-            </section>
-
             {/* Food */}
             <section className="space-y-2">
-              <h2 className="text-xl font-semibold text-gray-800">Food</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Food Available</h2>
               <p className="text-gray-700">{event.food || "N/A"}</p>
             </section>
 
