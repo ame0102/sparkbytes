@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Avatar, Button, Drawer, Dropdown, Menu } from "antd";
+import React from 'react';
+
+import { Avatar, Button, Dropdown, Menu } from "antd";
 import {
   MenuOutlined,
   UserOutlined,
   LogoutOutlined,
   HomeOutlined,
   StarOutlined,
+  CloseOutlined,
+  QuestionCircleOutlined,
+  InfoCircleOutlined,
+  MailOutlined
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { getCurrentUser } from "@/utils/eventApi";
@@ -58,32 +64,14 @@ const NavBar = () => {
     router.push("/login");
   };
 
-  const drawerMenu = (
-    <Menu
-      mode="inline"
-      selectedKeys={[pathname]}
-      onClick={({ key }) => {
-        if (key === "logout") return handleLogout();
-        router.push(key);
-        setDrawerOpen(false);
-      }}
-      style={{ borderRight: 0 }}
-    >
-      <Menu.Item key="/" icon={<HomeOutlined />}>
-        Home
-      </Menu.Item>
-      <Menu.Item key="/favorites" icon={<StarOutlined />}>
-        Favorites
-      </Menu.Item>
-      <Menu.Item key="/profile" icon={<UserOutlined />}>
-        My Profile
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />} danger>
-        Logout
-      </Menu.Item>
-    </Menu>
-  );
+  const getIcon = (href) => {
+    switch(href) {
+      case "/faq": return <QuestionCircleOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
+      case "/about": return <InfoCircleOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
+      case "/contact": return <MailOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
+      default: return null;
+    }
+  };
 
   const avatarMenu = (
     <Menu
@@ -91,76 +79,151 @@ const NavBar = () => {
         if (key === "logout") return handleLogout();
         router.push("/profile");
       }}
+      style={{
+        borderRadius: "12px", 
+        overflow: "hidden",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+      }}
     >
-      <Menu.Item key="profile">My Profile</Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined />} danger>
-        Logout
+      <Menu.Item key="profile" icon={<UserOutlined style={{ color: "#CC0000" }} />}>
+        <span style={{ fontWeight: "600", fontSize: "15px" }}>My Profile</span>
+      </Menu.Item>
+      <Menu.Item key="logout" icon={<LogoutOutlined style={{ color: "#CC0000" }} />} danger>
+        <span style={{ fontWeight: "600", fontSize: "15px" }}>Logout</span>
       </Menu.Item>
     </Menu>
   );
 
   const topLinks = [
-    { href: "/faq",     label: "FAQ"    },
-    { href: "/about",   label: "About"  },
-    { href: "/contact", label: "Contact"},
+    { href: "/faq",     label: "FAQ",     icon: <QuestionCircleOutlined /> },
+    { href: "/about",   label: "About",   icon: <InfoCircleOutlined /> },
+    { href: "/contact", label: "Contact", icon: <MailOutlined /> },
   ];
 
   const avatarEl = (
     <Avatar
-      size={28}
-      style={{ backgroundColor: "#fff", border: "1px solid #CC0000" }}
+      size={36}
+      style={{ 
+        backgroundColor: "#fff", 
+        border: "2px solid #fff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        cursor: "pointer"
+      }}
       icon={<UserOutlined style={{ color: "#CC0000" }} />}
     />
   );
 
   return (
     <>
-      <header className="bg-[#CC0000] w-full">
+      <div className="bg-[#CC0000] w-full" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
         <div
           className="flex justify-between items-center"
-          style={{ height: 64, paddingLeft: "1rem", paddingRight: "2rem" }}
+          style={{ 
+            height: 70, 
+            paddingLeft: "1.5rem", 
+            paddingRight: "2.5rem",
+            maxWidth: "calc(100% - 2.5in)",
+            margin: "0 auto",
+            width: "100%"
+          }}
         >
           {/* left: burger + logo */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             {isLoggedIn && (
               <button
                 aria-label="Open menu"
                 onClick={() => setDrawerOpen(true)}
-                className="text-white"
+                className="text-white p-2 hover:bg-[#aa0000] rounded-full transition-colors duration-200"
+                style={{ lineHeight: 0 }}
               >
-                <MenuOutlined style={{ fontSize: 24 }} />
+                <MenuOutlined style={{ fontSize: 22 }} />
               </button>
             )}
 
-            <a
-              href="/"
+            <div
+              onClick={() => router.push("/")}
               className="flex items-center font-bold text-white text-xl"
+              style={{ textDecoration: "none", cursor: "pointer" }}
             >
               <img
                 src="/logo.png"
                 alt="Logo"
-                className="h-10 w-10 rounded-full mr-2"
+                className="h-12 w-12 rounded-full mr-3"
+                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
               />
-              {width >= 640 && <span>Spark! Bytes</span>}
-            </a>
+              {width >= 640 && <span style={{ 
+                fontFamily: "'Nunito', sans-serif", 
+                fontWeight: 800,
+                fontSize: "22px",
+                letterSpacing: "0.3px",
+                textShadow: "0 1px 2px rgba(0,0,0,0.1)"
+              }}>Spark! Bytes</span>}
+            </div>
           </div>
 
           {/* right: desktop nav or avatar/login */}
           {isDesktop ? (
-            <div className="flex items-center space-x-6">
-              <nav className="flex space-x-4">
-                {topLinks.map(({ href, label }) => (
-                  <a
+            <div className="flex items-center space-x-8">
+              <nav className="flex space-x-6">
+                {topLinks.map(({ href, label, icon }) => (
+                  <div
                     key={href}
-                    href={href}
-                    className={`text-white ${
-                      pathname === href ? "font-bold" : "font-medium"
-                    } hover:text-gray-200`}
+                    onClick={() => router.push(href)}
+                    className="text-white text-md hover:text-gray-200 transition-colors duration-200 flex items-center"
+                    style={{ 
+                      textDecoration: "none",
+                      fontFamily: "'Nunito', sans-serif",
+                      fontWeight: pathname === href ? 800 : 600,
+                      position: "relative",
+                      paddingBottom: "4px",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                      letterSpacing: "0.3px",
+                      textShadow: "0 1px 1px rgba(0,0,0,0.1)"
+                    }}
                   >
+                    <span className="mr-1.5">
+                      {React.cloneElement(icon, { style: { fontSize: '16px' } })}
+                    </span>
                     {label}
-                  </a>
+                    {pathname === href && (
+                      <span style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: "0",
+                        width: "100%",
+                        height: "3px",
+                        background: "white",
+                        borderRadius: "3px"
+                      }}></span>
+                    )}
+                  </div>
                 ))}
               </nav>
+              
+              {isLoggedIn ? (
+                <Dropdown overlay={avatarMenu} placement="bottomRight">
+                  {avatarEl}
+                </Dropdown>
+              ) : (
+                <Button
+                  onClick={() => router.push("/login")}
+                  icon={<UserOutlined style={{ color: "#CC0000" }} />}
+                  style={{ 
+                    background: "#fff", 
+                    color: "#CC0000", 
+                    borderRadius: "8px", 
+                    fontWeight: 700, 
+                    border: "none",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    height: "36px",
+                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: "15px"
+                  }}
+                >
+                  {width > 380 ? "Login" : ""}
+                </Button>
+              )}
             </div>
           ) : (
             /* mobile avatar/login */
@@ -173,7 +236,17 @@ const NavBar = () => {
                 <Button
                   onClick={() => router.push("/login")}
                   icon={<UserOutlined style={{ color: "#CC0000" }} />}
-                  className="bg-white text-[#CC0000] px-3 py-1 text-sm"
+                  style={{ 
+                    background: "#fff", 
+                    color: "#CC0000", 
+                    borderRadius: "8px", 
+                    fontWeight: 700, 
+                    border: "none",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    height: "36px",
+                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: "15px"
+                  }}
                 >
                   {width > 380 ? "Login" : ""}
                 </Button>
@@ -181,18 +254,178 @@ const NavBar = () => {
             </div>
           )}
         </div>
-      </header>
+      </div>
 
-      {/* Drawer panel */}
-      <Drawer
-        title="Menu"
-        placement="left"
-        onClose={() => setDrawerOpen(false)}
-        open={drawerOpen}
-        bodyStyle={{ padding: 0 }}
-      >
-        {drawerMenu}
-      </Drawer>
+      {/* Overlay Menu */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 flex" onClick={() => setDrawerOpen(false)}>
+          {/* Menu panel */}
+          <div 
+            className="bg-white rounded-r-2xl shadow-lg relative"
+            style={{ 
+              width: isDesktop ? 320 : '75%', 
+              maxWidth: 320,
+              height: 'auto',
+              maxHeight: '75vh',
+              marginTop: '80px',
+              overflow: 'auto'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button 
+              onClick={() => setDrawerOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close menu"
+            >
+              <CloseOutlined style={{ fontSize: 18, color: "#666" }} />
+            </button>
+            
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100">
+              <div 
+                className="flex items-center gap-3 cursor-pointer" 
+                onClick={() => {
+                  router.push("/profile");
+                  setDrawerOpen(false);
+                }}
+              >
+                <Avatar 
+                  size={42} 
+                  icon={<UserOutlined />} 
+                  style={{ 
+                    backgroundColor: "#CC0000", 
+                    color: "white",
+                    flexShrink: 0
+                  }}
+                />
+                <div className="overflow-hidden">
+                  <div 
+                    style={{ 
+                      fontWeight: 700, 
+                      fontSize: '18px', 
+                      color: '#333',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span>{userName}</span>
+                    <span 
+                      className="ml-1.5 text-gray-500 hover:text-[#CC0000]" 
+                      style={{ fontSize: '14px', transition: 'color 0.2s' }}
+                    >
+                      (View Profile)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    BU Student
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Menu items */}
+            <div className="py-4">
+              <div 
+                className={`flex items-center px-6 py-3 ${pathname === '/' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
+                onClick={() => {
+                  router.push('/');
+                  setDrawerOpen(false);
+                }}
+              >
+                <HomeOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
+                <span style={{ 
+                  fontWeight: pathname === '/' ? 700 : 600,
+                  fontSize: '16px',
+                  color: '#333'
+                }}>
+                  Home
+                </span>
+              </div>
+              
+              <div 
+                className={`flex items-center px-6 py-3 ${pathname === '/favorites' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
+                onClick={() => {
+                  router.push('/favorites');
+                  setDrawerOpen(false);
+                }}
+              >
+                <StarOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
+                <span style={{ 
+                  fontWeight: pathname === '/favorites' ? 700 : 600,
+                  fontSize: '16px',
+                  color: '#333'
+                }}>
+                  Favorites
+                </span>
+              </div>
+              
+              <div 
+                className={`flex items-center px-6 py-3 ${pathname === '/profile' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
+                onClick={() => {
+                  router.push('/profile');
+                  setDrawerOpen(false);
+                }}
+              >
+                <UserOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
+                <span style={{ 
+                  fontWeight: pathname === '/profile' ? 700 : 600,
+                  fontSize: '16px',
+                  color: '#333'
+                }}>
+                  My Profile
+                </span>
+              </div>
+              
+              {/* Top links in the menu */}
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                {topLinks.map(({ href, label, icon }) => (
+                  <div 
+                    key={href}
+                    className={`flex items-center px-6 py-3 ${pathname === href ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
+                    onClick={() => {
+                      router.push(href);
+                      setDrawerOpen(false);
+                    }}
+                  >
+                    {React.cloneElement(icon, { style: { fontSize: 18, color: "#CC0000", marginRight: 12 } })}
+                    <span style={{ 
+                      fontWeight: pathname === href ? 700 : 600,
+                      fontSize: '16px',
+                      color: '#333'
+                    }}>
+                      {label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Logout */}
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <div 
+                  className="flex items-center px-6 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    handleLogout();
+                    setDrawerOpen(false);
+                  }}
+                >
+                  <LogoutOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
+                  <span style={{ 
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    color: '#CC0000'
+                  }}>
+                    Logout
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
