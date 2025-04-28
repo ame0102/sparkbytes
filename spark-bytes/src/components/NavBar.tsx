@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import React from 'react';
-
 import { Avatar, Button, Dropdown, Menu } from "antd";
 import {
   MenuOutlined,
@@ -21,9 +19,9 @@ const NavBar = () => {
   const pathname = usePathname();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName]     = useState("");
+  const [userName, setUserName] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [width, setWidth]           = useState(
+  const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
   const isDesktop = width >= 768;
@@ -81,6 +79,12 @@ const NavBar = () => {
       </Menu.Item>
     </Menu>
   );
+
+  const topLinks = [
+    { href: "/faq",     label: "FAQ"    },
+    { href: "/about",   label: "About"  },
+    { href: "/contact", label: "Contact"},
+  ];
 
   const avatarEl = (
     <Avatar
@@ -143,32 +147,95 @@ const NavBar = () => {
             </div>
           </div>
 
-          {/* right: avatar/login */}
-          <div className="flex items-center space-x-2">
-            {isLoggedIn ? (
-              <Dropdown overlay={avatarMenu} placement="bottomRight">
-                {avatarEl}
-              </Dropdown>
-            ) : (
-              <Button
-                onClick={() => router.push("/login")}
-                icon={<UserOutlined style={{ color: "#CC0000" }} />}
-                style={{ 
-                  background: "#fff", 
-                  color: "#CC0000", 
-                  borderRadius: "8px", 
-                  fontWeight: 700, 
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  height: "36px",
-                  fontFamily: "'Nunito', sans-serif",
-                  fontSize: "15px"
-                }}
-              >
-                {width > 380 ? "Login" : ""}
-              </Button>
-            )}
-          </div>
+          {/* right: desktop nav or avatar/login */}
+          {isDesktop ? (
+            <div className="flex items-center space-x-8">
+              <nav className="flex space-x-6">
+                {topLinks.map(({ href, label }) => (
+                  <div
+                    key={href}
+                    onClick={() => router.push(href)}
+                    className={`text-white text-md hover:text-gray-200 transition-colors duration-200`}
+                    style={{ 
+                      textDecoration: "none",
+                      fontFamily: "'Nunito', sans-serif",
+                      fontWeight: pathname === href ? 800 : 600,
+                      position: "relative",
+                      paddingBottom: "4px",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                      letterSpacing: "0.3px",
+                      textShadow: "0 1px 1px rgba(0,0,0,0.1)"
+                    }}
+                  >
+                    {label}
+                    {pathname === href && (
+                      <span style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: "0",
+                        width: "100%",
+                        height: "3px",
+                        background: "white",
+                        borderRadius: "3px"
+                      }}></span>
+                    )}
+                  </div>
+                ))}
+              </nav>
+              
+              {isLoggedIn ? (
+                <Dropdown overlay={avatarMenu} placement="bottomRight">
+                  {avatarEl}
+                </Dropdown>
+              ) : (
+                <Button
+                  onClick={() => router.push("/login")}
+                  icon={<UserOutlined style={{ color: "#CC0000" }} />}
+                  style={{ 
+                    background: "#fff", 
+                    color: "#CC0000", 
+                    borderRadius: "8px", 
+                    fontWeight: 700, 
+                    border: "none",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    height: "36px",
+                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: "15px"
+                  }}
+                >
+                  {width > 380 ? "Login" : ""}
+                </Button>
+              )}
+            </div>
+          ) : (
+            /* mobile avatar/login */
+            <div className="flex items-center space-x-2">
+              {isLoggedIn ? (
+                <Dropdown overlay={avatarMenu} placement="bottomRight">
+                  {avatarEl}
+                </Dropdown>
+              ) : (
+                <Button
+                  onClick={() => router.push("/login")}
+                  icon={<UserOutlined style={{ color: "#CC0000" }} />}
+                  style={{ 
+                    background: "#fff", 
+                    color: "#CC0000", 
+                    borderRadius: "8px", 
+                    fontWeight: 700, 
+                    border: "none",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    height: "36px",
+                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: "15px"
+                  }}
+                >
+                  {width > 380 ? "Login" : ""}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -199,42 +266,18 @@ const NavBar = () => {
             
             {/* Header */}
             <div className="p-6 border-b border-gray-100">
-              <div 
-                className="flex items-center gap-3 cursor-pointer" 
-                onClick={() => {
-                  router.push("/profile");
-                  setDrawerOpen(false);
-                }}
-              >
+              <div className="flex items-center space-x-3">
                 <Avatar 
-                  size={42} 
+                  size={40} 
                   icon={<UserOutlined />} 
                   style={{ 
                     backgroundColor: "#CC0000", 
-                    color: "white",
-                    flexShrink: 0
+                    color: "white" 
                   }}
                 />
-                <div className="overflow-hidden">
-                  <div 
-                    style={{ 
-                      fontWeight: 700, 
-                      fontSize: '18px', 
-                      color: '#333',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <span>{userName}</span>
-                    <span 
-                      className="ml-1.5 text-gray-500 hover:text-[#CC0000]" 
-                      style={{ fontSize: '14px', transition: 'color 0.2s' }}
-                    >
-                      (View Profile)
-                    </span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '18px', color: '#333' }}>
+                    {userName}
                   </div>
                   <div style={{ fontSize: '14px', color: '#666' }}>
                     BU Student
