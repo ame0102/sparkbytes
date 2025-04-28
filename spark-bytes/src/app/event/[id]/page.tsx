@@ -5,11 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { getCommentsByEventId, getEventById, postComment } from "@/utils/eventApi";
 import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
-import { Spin, Input, Button } from "antd";
+import { Spin, Input, Button, Avatar, Card, Divider, Typography, Space } from "antd";
 import { supabase } from "@/utils/supabaseClient";
-import { EnvironmentOutlined } from "@ant-design/icons";
+import { EnvironmentOutlined, UserOutlined, CommentOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 
 const { TextArea } = Input;
+const { Title, Text, Paragraph } = Typography;
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,16 +20,70 @@ export default function EventDetailPage() {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [creatorInfo, setCreatorInfo] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([
-      getEventById(id),
-      getCommentsByEventId(id)
-    ]).then(([eventData, commentsData]) => {
-      setEvent(eventData);
-      setComments(commentsData);
-    }).finally(() => setLoading(false));
+    
+    const fetchEventData = async () => {
+      try {
+        // Get event data
+        const eventData = await getEventById(id);
+        
+        // If we have a user_id in the event, fetch their profile
+        if (eventData.user_id) {
+          // First try to get from the profiles table
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', eventData.user_id)
+            .single();
+            
+          if (!profileError && profileData) {
+            // If we found a profile, use it
+            setCreatorInfo({
+              name: profileData.name || profileData.full_name,
+              email: eventData.creator_email,
+              id: eventData.user_id
+            });
+            
+            // Update event data with creator name
+            eventData.creator_name = profileData.name || profileData.full_name;
+          } else {
+            // Fallback: get user data from auth.users if available
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('name, email')
+              .eq('id', eventData.user_id)
+              .single();
+              
+            if (!userError && userData) {
+              setCreatorInfo({
+                name: userData.name,
+                email: userData.email,
+                id: eventData.user_id
+              });
+              
+              // Update event data with creator name
+              eventData.creator_name = userData.name;
+            }
+          }
+        }
+        
+        // Get comments
+        const commentsData = await getCommentsByEventId(id);
+        
+        // Update state
+        setEvent(eventData);
+        setComments(commentsData);
+      } catch (error) {
+        console.error("Error fetching event data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchEventData();
   }, [id]);
 
   const handlePostComment = async (parentId: string | null = null) => {
@@ -65,62 +120,109 @@ export default function EventDetailPage() {
     );
   };
   
-
   const renderComments = (parentId: string | null = null, level = 0) => {
     const filtered = comments.filter(c => c.parent_id === parentId);
 
     return (
-      <div className={`space-y-4 ${level > 0 ? 'pl-6 border-l-2 border-gray-300' : ''}`}>
+      <div style={{ 
+        marginLeft: level > 0 ? 24 : 0,
+        borderLeft: level > 0 ? '2px solid #f0f0f0' : 'none',
+        paddingLeft: level > 0 ? 16 : 0,
+      }}>
         {filtered.map(comment => (
-          <div key={comment.id}>
-            <div className="bg-gray-100 p-3 rounded-lg">
-              <p className="text-gray-800">
-                {comment.deleted ? (
-                  <em className="text-gray-400">This comment has been deleted.</em>
-                ) : (
-                  comment.content
-                )}
-              </p>
-              <p className="text-sm text-gray-500">
-                {dayjs(comment.created_at).format('MMM D, YYYY h:mm A')}
-              </p>
+          <div key={comment.id} style={{ marginBottom: 16 }}>
+            <Card
+              size="small"
+              style={{ 
+                backgroundColor: '#f9f9f9',
+                borderRadius: 8,
+                marginBottom: 8
+              }}
+              bodyStyle={{ padding: '12px 16px' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Avatar 
+                  icon={<UserOutlined />} 
+                  size={36} 
+                  style={{ backgroundColor: '#CC0000' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 4 
+                  }}>
+                    <Text strong>{comment.user_email?.split('@')[0] || 'Anonymous'}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {dayjs(comment.created_at).format('MMM D, YYYY h:mm A')}
+                    </Text>
+                  </div>
+                  
+                  <Paragraph style={{ margin: '8px 0' }}>
+                    {comment.deleted ? (
+                      <Text type="secondary" italic>This comment has been deleted.</Text>
+                    ) : (
+                      comment.content
+                    )}
+                  </Paragraph>
+                  
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <Button
+                      type="text"
+                      size="small"
+                      onClick={() => setReplyingTo(comment.id)}
+                      disabled={comment.deleted}
+                      style={{ padding: '0', height: 'auto', fontSize: 13 }}
+                    >
+                      Reply
+                    </Button>
 
-              <Button
-                size="small"
-                type="link"
-                onClick={() => setReplyingTo(comment.id)}
-                className="p-0 mt-1"
-              >
-                Reply
-              </Button>
-
-              {/* Only show Delete button if not deleted */}
-              {!comment.deleted && (
-                <Button
-                  size="small"
-                  type="link"
-                  danger
-                  onClick={() => handleDeleteComment(comment.id)}
-                  className="p-0 mt-1"
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
+                    {!comment.deleted && (
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        onClick={() => handleDeleteComment(comment.id)}
+                        style={{ padding: '0', height: 'auto', fontSize: 13 }}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
 
             {replyingTo === comment.id && (
-              <div className="mt-2 flex flex-col gap-2">
+              <div style={{ 
+                marginLeft: 48, 
+                marginBottom: 20, 
+                backgroundColor: 'white', 
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: '1px solid #f0f0f0'
+              }}>
                 <TextArea
                   rows={2}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write your reply..."
+                  style={{ marginBottom: 12, borderRadius: 4 }}
                 />
-                <div className="flex gap-2">
-                  <Button type="primary" onClick={() => handlePostComment(comment.id)}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button 
+                    type="primary" 
+                    size="small"
+                    style={{ backgroundColor: '#CC0000', borderColor: '#CC0000' }}
+                    onClick={() => handlePostComment(comment.id)}
+                  >
                     Post Reply
                   </Button>
-                  <Button onClick={() => { setReplyingTo(null); setNewComment(""); }}>
+                  <Button 
+                    size="small"
+                    onClick={() => { setReplyingTo(null); setNewComment(""); }}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -133,7 +235,21 @@ export default function EventDetailPage() {
     );
   };
 
-  if (loading) return <Spin className="mt-20" />;
+  if (loading) {
+    return (
+      <>
+        <NavBar />
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: 'calc(100vh - 70px)' 
+        }}>
+          <Spin size="large" />
+        </div>
+      </>
+    );
+  }
 
   if (!event) {
     router.push("/404");
@@ -143,83 +259,175 @@ export default function EventDetailPage() {
   return (
     <>
       <NavBar />
-      <main className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Event image */}
-          <img
-            src={`/${event.location}.jpg`}
-            alt={event.location}
-            onError={e =>
-              ((e.target as HTMLImageElement).style.display = "none")
+      <main style={{ 
+        backgroundColor: '#f9f9f9', 
+        minHeight: 'calc(100vh - 70px)',
+        padding: '40px 20px'
+      }}>
+        <div style={{ 
+          maxWidth: '1000px', 
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 24
+        }}>
+          {/* Back button */}
+          <Button
+            type="default"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => router.push("/")}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            Back to Events
+          </Button>
+
+          {/* Event Card */}
+          <Card 
+            style={{ 
+              borderRadius: 12,
+              overflow: 'hidden',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            }}
+            bodyStyle={{ padding: 0 }}
+          >
+            {/* Event image */}
+            <div style={{ position: 'relative' }}>
+              <img
+                src={`/${event.location}.jpg`}
+                alt={event.location}
+                onError={e => ((e.target as HTMLImageElement).src = "/default.jpg")}
+                style={{ 
+                  width: '100%', 
+                  height: '300px', 
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+              />
+            </div>
+
+            <div style={{ padding: 24 }}>
+              {/* Event info */}
+              <div style={{ marginBottom: 20 }}>
+                <Title level={2} style={{ margin: '0 0 8px 0' }}>
+                  {event.title}
+                </Title>
+                
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  {/* Creator name with enhanced display */}
+                  <Text type="secondary" style={{ fontSize: '14px', marginBottom: '4px', display: 'block' }}>
+                    <UserOutlined style={{ marginRight: 8 }} />
+                    <span style={{ fontWeight: 500 }}>Posted by:</span> {event.creator_name || (event.creator_email ? event.creator_email.split('@')[0] : 'Anonymous')}
+                    {creatorInfo && 
+                      <Button 
+                        type="link" 
+                        size="small" 
+                        onClick={() => router.push(`/profile/${creatorInfo.id}`)}
+                        style={{ padding: '0 0 0 8px', height: 'auto' }}
+                      >
+                        View Profile
+                      </Button>
+                    }
+                  </Text>
+                  
+                  {/* Date and time */}
+                  <Text style={{ fontSize: '15px', display: 'block', margin: '8px 0' }}>
+                    <strong>When:</strong> {dayjs(event.date).format("MMMM D, YYYY")} • {event.time}
+                  </Text>
+                  
+                  {/* Location */}
+                  <Text style={{ fontSize: '15px', display: 'block', margin: '8px 0' }}>
+                    <strong>Where:</strong> {event.location}
+                  </Text>
+                  
+                  {/* Address with Google Maps link */}
+                  {event.address && (
+                    <Text>
+                      <EnvironmentOutlined style={{ marginRight: 8 }} />
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1677ff' }}
+                      >
+                        {event.address}
+                      </a>
+                    </Text>
+                  )}
+                  
+                  {/* Food info */}
+                  <div>
+                    <Title level={5} style={{ marginBottom: 8, marginTop: 16 }}>
+                      Food Available
+                    </Title>
+                    <Text>{event.food || "N/A"}</Text>
+                  </div>
+
+                  {/* Portions left */}
+                  {event.portions !== undefined && (
+                    <Text>
+                      <strong>Portions Left:</strong> {event.portions}
+                    </Text>
+                  )}
+                  
+                  {/* Dietary options */}
+                  {event.dietary?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <Title level={5} style={{ marginBottom: 8 }}>
+                        Dietary Options
+                      </Title>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {event.dietary.map((d: string) => (
+                          <span
+                            key={d}
+                            style={{
+                              background: "#e6f4ff",
+                              color: "#1677ff",
+                              padding: "4px 12px",
+                              borderRadius: 16,
+                              fontSize: 13
+                            }}
+                          >
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Space>
+              </div>
+            </div>
+          </Card>
+
+          {/* Comments Section */}
+          <Card
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CommentOutlined style={{ color: '#CC0000' }} />
+                <span>Comments ({comments.filter(c => !c.parent_id).length})</span>
+              </div>
             }
-            className="w-full h-64 object-cover"
-          />
-          <div className="p-6 space-y-4">
-            {/* Title & meta */}
-            <h1 className="text-3xl font-bold text-gray-900">
-              {event.title}
-            </h1>
-            <p className="text-gray-600">
-              {dayjs(event.date).format("MMMM D, YYYY")} • {event.time} •{" "}
-              {event.location}
-            </p>
-            {/* Address */}
-            {event.address && (
-              <p className="text-gray-600 flex items-center gap-2">
-                <EnvironmentOutlined style={{ marginRight: 4 }} />
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  {event.address}
-                </a>
-              </p>
-            )}
-
-            {/* Food */}
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold text-gray-800">Food Available</h2>
-              <p className="text-gray-700">{event.food || "N/A"}</p>
-            </section>
-
-            {/* Dietary chips */}
-            {event.dietary?.length > 0 && (
-              <section className="space-y-2">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Dietary Options
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {event.dietary.map((d: string) => (
-                    <span
-                      key={d}
-                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
-                    >
-                      {d}
-                    </span>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-        </div>
-
-        {/* COMMENTS SECTION */}
-        <div className="p-6 space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Comments</h2>
-            <div className="flex flex-col gap-2">
+            style={{ 
+              borderRadius: 12,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            }}
+          >
+            {/* New comment input */}
+            <div style={{ marginBottom: 24 }}>
               <TextArea
-                rows={4}
+                rows={3}
                 value={replyingTo ? "" : newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a new comment..."
+                placeholder="Write a comment..."
                 disabled={replyingTo !== null}
+                style={{ marginBottom: 12, borderRadius: 8 }}
               />
               {!replyingTo && (
                 <Button
                   type="primary"
-                  style={{ backgroundColor: "#CC0000", borderColor: "#CC0000" }}
+                  style={{ 
+                    backgroundColor: "#CC0000", 
+                    borderColor: "#CC0000" 
+                  }}
                   onClick={() => handlePostComment(null)}
                 >
                   Post Comment
@@ -227,19 +435,21 @@ export default function EventDetailPage() {
               )}
             </div>
 
-            {/* Render all comments */}
-            {renderComments()}
-          </div>
+            <Divider style={{ margin: '8px 0 24px' }} />
 
-        {/* Back button */}
-        <div className="max-w-3xl mx-auto mt-6">
-          <Button
-            type="primary"
-            style={{ background: "#CC0000", borderColor: "#CC0000", color: "#fff" }}
-            onClick={() => router.push("/")}
-          >
-            ← Back to all events
-          </Button>
+            {/* Comments list */}
+            {comments.length > 0 ? (
+              renderComments()
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '24px 0', 
+                color: '#999' 
+              }}>
+                <Text type="secondary">Be the first to comment on this event!</Text>
+              </div>
+            )}
+          </Card>
         </div>
       </main>
     </>

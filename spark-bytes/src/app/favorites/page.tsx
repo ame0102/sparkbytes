@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Spin, Button } from "antd";
-import { EnvironmentOutlined } from "@ant-design/icons";
+import { Spin, Button, Tooltip, message } from "antd";
+import { EnvironmentOutlined, StarFilled } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
-import { getFavoriteEvents } from "@/utils/eventApi";
+import { getFavoriteEvents, removeFavorite } from "@/utils/eventApi";
 import dayjs from "dayjs";
 
 export default function FavoritesPage() {
   const [favoriteEvents, setFavoriteEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [pulsingId, setPulsingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -23,8 +25,39 @@ export default function FavoritesPage() {
 
   const fmt = (d: string) => dayjs(d).format("MMM. D, YYYY");
 
+  const handleRemoveFavorite = async (e: React.MouseEvent, eventId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setPulsingId(eventId);
+    setTimeout(() => setPulsingId(null), 400);
+    
+    setRemovingId(eventId);
+    
+    try {
+      await removeFavorite(eventId);
+      setFavoriteEvents(favoriteEvents.filter(ev => ev.id !== eventId));
+      message.success("Event removed from favorites");
+    } catch (error) {
+      message.error("Failed to remove event from favorites");
+      console.error("Failed to remove favorite:", error);
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   return (
     <>
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.4); }
+          100% { transform: scale(1); }
+        }
+        .pulse {
+          animation: pulse 0.4s ease;
+        }
+      `}</style>
       <NavBar />
 
       <main
@@ -78,11 +111,35 @@ export default function FavoritesPage() {
                     transition: "transform .2s",
                     display: "flex",
                     flexDirection: "column",
-                    minHeight: 360
+                    minHeight: 360,
+                    position: "relative"
                   }}
                   onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.02)")}
                   onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
                 >
+                  {/* Star button for removing from favorites */}
+                  <div
+                    className={pulsingId === ev.id ? "pulse" : ""}
+                    onClick={(e) => handleRemoveFavorite(e, ev.id)}
+                    style={{
+                      position: "absolute",
+                      top: 10,
+                      left: 10,
+                      background: "white",
+                      borderRadius: "50%",
+                      padding: 8,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      zIndex: 2,
+                      cursor: "pointer",
+                      transition: "transform 0.2s ease",
+                      opacity: removingId === ev.id ? 0.6 : 1
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                  >
+                    <StarFilled style={{ fontSize: 24, color: "#CC0000" }} />
+                  </div>
+
                   <img
                     src={`/${ev.location}.jpg`}
                     alt={ev.location}
