@@ -1,14 +1,17 @@
 "use client";
 
+import React from 'react';
 import { useState, useEffect } from "react";
-import { Avatar, Button, Dropdown, Menu } from "antd";
+import { Avatar, Button, Drawer, Dropdown, Menu } from "antd";
 import {
   MenuOutlined,
   UserOutlined,
   LogoutOutlined,
   HomeOutlined,
   StarOutlined,
-  CloseOutlined
+  QuestionCircleOutlined,
+  InfoCircleOutlined,
+  MailOutlined
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { getCurrentUser } from "@/utils/eventApi";
@@ -59,6 +62,65 @@ const NavBar = () => {
     router.push("/login");
   };
 
+  const navigateToProfile = () => {
+    router.push("/profile");
+    setDrawerOpen(false);
+  };
+
+  const drawerMenu = (
+    <div className="py-3">
+      <div 
+        className="px-6 pb-3 mb-2 border-b border-gray-100"
+        onClick={navigateToProfile}
+        style={{ cursor: "pointer" }}
+      >
+        <div className="flex items-center space-x-3 hover:bg-gray-50 p-2 rounded-md transition-colors">
+          <Avatar 
+            size={40}
+            icon={<UserOutlined />}
+            style={{ 
+              backgroundColor: "#f5f5f5", 
+              color: "#CC0000",
+              border: "1px solid #e0e0e0"
+            }}
+          />
+          <div>
+            <div className="font-semibold text-gray-800">{userName}</div>
+            <div className="text-xs text-gray-500">BU Student</div>
+          </div>
+        </div>
+      </div>
+      
+      <Menu
+        mode="inline"
+        selectedKeys={[pathname]}
+        onClick={({ key }) => {
+          if (key === "logout") return handleLogout();
+          router.push(key);
+          setDrawerOpen(false);
+        }}
+        style={{ 
+          borderRight: 0,
+          fontFamily: "'Nunito', sans-serif"
+        }}
+      >
+        <Menu.Item key="/" icon={<HomeOutlined style={{ color: "#CC0000" }} />}>
+          <span style={{ fontWeight: pathname === "/" ? "600" : "normal", color: "#333" }}>Home</span>
+        </Menu.Item>
+        <Menu.Item key="/favorites" icon={<StarOutlined style={{ color: "#CC0000" }} />}>
+          <span style={{ fontWeight: pathname === "/favorites" ? "600" : "normal", color: "#333" }}>Favorites</span>
+        </Menu.Item>
+        <Menu.Item key="/profile" icon={<UserOutlined style={{ color: "#CC0000" }} />}>
+          <span style={{ fontWeight: pathname === "/profile" ? "600" : "normal", color: "#333" }}>Profile</span>
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item key="logout" icon={<LogoutOutlined style={{ color: "#d83232" }} />} danger>
+          <span style={{ fontWeight: 500 }}>Logout</span>
+        </Menu.Item>
+      </Menu>
+    </div>
+  );
+
   const avatarMenu = (
     <Menu
       onClick={({ key }) => {
@@ -72,18 +134,18 @@ const NavBar = () => {
       }}
     >
       <Menu.Item key="profile" icon={<UserOutlined style={{ color: "#CC0000" }} />}>
-        <span style={{ fontWeight: "600", fontSize: "15px" }}>My Profile</span>
+        <span style={{ fontWeight: 500, color: "#333" }}>Profile</span>
       </Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined style={{ color: "#CC0000" }} />} danger>
-        <span style={{ fontWeight: "600", fontSize: "15px" }}>Logout</span>
+      <Menu.Item key="logout" icon={<LogoutOutlined style={{ color: "#d83232" }} />} danger>
+        <span style={{ fontWeight: 500 }}>Logout</span>
       </Menu.Item>
     </Menu>
   );
 
   const topLinks = [
-    { href: "/faq",     label: "FAQ"    },
-    { href: "/about",   label: "About"  },
-    { href: "/contact", label: "Contact"},
+    { href: "/faq",     label: "FAQ",    icon: <QuestionCircleOutlined /> },
+    { href: "/about",   label: "About",  icon: <InfoCircleOutlined /> },
+    { href: "/contact", label: "Contact", icon: <MailOutlined /> },
   ];
 
   const avatarEl = (
@@ -137,13 +199,7 @@ const NavBar = () => {
                 className="h-12 w-12 rounded-full mr-3"
                 style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
               />
-              {width >= 640 && <span style={{ 
-                fontFamily: "'Nunito', sans-serif", 
-                fontWeight: 800,
-                fontSize: "22px",
-                letterSpacing: "0.3px",
-                textShadow: "0 1px 2px rgba(0,0,0,0.1)"
-              }}>Spark! Bytes</span>}
+              {width >= 640 && <span style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800 }}>Spark! Bytes</span>}
             </div>
           </div>
 
@@ -151,23 +207,26 @@ const NavBar = () => {
           {isDesktop ? (
             <div className="flex items-center space-x-8">
               <nav className="flex space-x-6">
-                {topLinks.map(({ href, label }) => (
+                {topLinks.map(({ href, label, icon }) => (
                   <div
                     key={href}
                     onClick={() => router.push(href)}
-                    className={`text-white text-md hover:text-gray-200 transition-colors duration-200`}
+                    className="text-white text-md hover:text-gray-200 transition-colors duration-200"
                     style={{ 
                       textDecoration: "none",
                       fontFamily: "'Nunito', sans-serif",
-                      fontWeight: pathname === href ? 800 : 600,
+                      fontWeight: pathname === href ? 700 : 600,
                       position: "relative",
                       paddingBottom: "4px",
                       cursor: "pointer",
-                      fontSize: "16px",
-                      letterSpacing: "0.3px",
-                      textShadow: "0 1px 1px rgba(0,0,0,0.1)"
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px"
                     }}
                   >
+                    {React.cloneElement(icon, { 
+                      style: { fontSize: 18 } 
+                    })}
                     {label}
                     {pathname === href && (
                       <span style={{
@@ -196,12 +255,11 @@ const NavBar = () => {
                     background: "#fff", 
                     color: "#CC0000", 
                     borderRadius: "8px", 
-                    fontWeight: 700, 
+                    fontWeight: 600, 
                     border: "none",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     height: "36px",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontSize: "15px"
+                    fontFamily: "'Nunito', sans-serif"
                   }}
                 >
                   {width > 380 ? "Login" : ""}
@@ -223,12 +281,11 @@ const NavBar = () => {
                     background: "#fff", 
                     color: "#CC0000", 
                     borderRadius: "8px", 
-                    fontWeight: 700, 
+                    fontWeight: 600, 
                     border: "none",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     height: "36px",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontSize: "15px"
+                    fontFamily: "'Nunito', sans-serif"
                   }}
                 >
                   {width > 380 ? "Login" : ""}
@@ -239,129 +296,26 @@ const NavBar = () => {
         </div>
       </div>
 
-      {/* Overlay Menu */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 flex" onClick={() => setDrawerOpen(false)}>
-          {/* Menu panel */}
-          <div 
-            className="bg-white rounded-r-2xl shadow-lg relative"
-            style={{ 
-              width: isDesktop ? 320 : '75%', 
-              maxWidth: 320,
-              height: 'auto',
-              maxHeight: '75vh',
-              marginTop: '80px',
-              overflow: 'auto'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button 
-              onClick={() => setDrawerOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Close menu"
-            >
-              <CloseOutlined style={{ fontSize: 18, color: "#666" }} />
-            </button>
-            
-            {/* Header */}
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-3">
-                <Avatar 
-                  size={40} 
-                  icon={<UserOutlined />} 
-                  style={{ 
-                    backgroundColor: "#CC0000", 
-                    color: "white" 
-                  }}
-                />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '18px', color: '#333' }}>
-                    {userName}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>
-                    BU Student
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Menu items */}
-            <div className="py-4">
-              <div 
-                className={`flex items-center px-6 py-3 ${pathname === '/' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
-                onClick={() => {
-                  router.push('/');
-                  setDrawerOpen(false);
-                }}
-              >
-                <HomeOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
-                <span style={{ 
-                  fontWeight: pathname === '/' ? 700 : 600,
-                  fontSize: '16px',
-                  color: '#333'
-                }}>
-                  Home
-                </span>
-              </div>
-              
-              <div 
-                className={`flex items-center px-6 py-3 ${pathname === '/favorites' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
-                onClick={() => {
-                  router.push('/favorites');
-                  setDrawerOpen(false);
-                }}
-              >
-                <StarOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
-                <span style={{ 
-                  fontWeight: pathname === '/favorites' ? 700 : 600,
-                  fontSize: '16px',
-                  color: '#333'
-                }}>
-                  Favorites
-                </span>
-              </div>
-              
-              <div 
-                className={`flex items-center px-6 py-3 ${pathname === '/profile' ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
-                onClick={() => {
-                  router.push('/profile');
-                  setDrawerOpen(false);
-                }}
-              >
-                <UserOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
-                <span style={{ 
-                  fontWeight: pathname === '/profile' ? 700 : 600,
-                  fontSize: '16px',
-                  color: '#333'
-                }}>
-                  My Profile
-                </span>
-              </div>
-              
-              {/* Logout */}
-              <div className="mt-2 pt-2 border-t border-gray-100">
-                <div 
-                  className="flex items-center px-6 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => {
-                    handleLogout();
-                    setDrawerOpen(false);
-                  }}
-                >
-                  <LogoutOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />
-                  <span style={{ 
-                    fontWeight: 600,
-                    fontSize: '16px',
-                    color: '#CC0000'
-                  }}>
-                    Logout
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Drawer panel */}
+      <Drawer
+        title={null}
+        placement="left"
+        onClose={() => setDrawerOpen(false)}
+        open={drawerOpen}
+        bodyStyle={{ padding: 0 }}
+        headerStyle={{ display: 'none' }}
+        contentWrapperStyle={{ 
+          borderRadius: "0 12px 12px 0",
+          height: "auto",
+          maxHeight: "400px",
+          width: isDesktop ? 280 : '80%',
+          maxWidth: 280,
+          marginTop: "70px"
+        }}
+        closable={false}
+      >
+        {drawerMenu}
+      </Drawer>
     </>
   );
 };
