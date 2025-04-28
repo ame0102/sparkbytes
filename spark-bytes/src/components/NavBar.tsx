@@ -10,10 +10,7 @@ import {
   LogoutOutlined,
   HomeOutlined,
   StarOutlined,
-  CloseOutlined,
-  QuestionCircleOutlined,
-  InfoCircleOutlined,
-  MailOutlined
+  CloseOutlined
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { getCurrentUser } from "@/utils/eventApi";
@@ -64,15 +61,6 @@ const NavBar = () => {
     router.push("/login");
   };
 
-  const getIcon = (href) => {
-    switch(href) {
-      case "/faq": return <QuestionCircleOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
-      case "/about": return <InfoCircleOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
-      case "/contact": return <MailOutlined style={{ fontSize: 18, color: "#CC0000", marginRight: 12 }} />;
-      default: return null;
-    }
-  };
-
   const avatarMenu = (
     <Menu
       onClick={({ key }) => {
@@ -93,12 +81,6 @@ const NavBar = () => {
       </Menu.Item>
     </Menu>
   );
-
-  const topLinks = [
-    { href: "/faq",     label: "FAQ",     icon: <QuestionCircleOutlined /> },
-    { href: "/about",   label: "About",   icon: <InfoCircleOutlined /> },
-    { href: "/contact", label: "Contact", icon: <MailOutlined /> },
-  ];
 
   const avatarEl = (
     <Avatar
@@ -161,98 +143,32 @@ const NavBar = () => {
             </div>
           </div>
 
-          {/* right: desktop nav or avatar/login */}
-          {isDesktop ? (
-            <div className="flex items-center space-x-8">
-              <nav className="flex space-x-6">
-                {topLinks.map(({ href, label, icon }) => (
-                  <div
-                    key={href}
-                    onClick={() => router.push(href)}
-                    className="text-white text-md hover:text-gray-200 transition-colors duration-200 flex items-center"
-                    style={{ 
-                      textDecoration: "none",
-                      fontFamily: "'Nunito', sans-serif",
-                      fontWeight: pathname === href ? 800 : 600,
-                      position: "relative",
-                      paddingBottom: "4px",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                      letterSpacing: "0.3px",
-                      textShadow: "0 1px 1px rgba(0,0,0,0.1)"
-                    }}
-                  >
-                    <span className="mr-1.5">
-                      {React.cloneElement(icon, { style: { fontSize: '16px' } })}
-                    </span>
-                    {label}
-                    {pathname === href && (
-                      <span style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: "0",
-                        width: "100%",
-                        height: "3px",
-                        background: "white",
-                        borderRadius: "3px"
-                      }}></span>
-                    )}
-                  </div>
-                ))}
-              </nav>
-              
-              {isLoggedIn ? (
-                <Dropdown overlay={avatarMenu} placement="bottomRight">
-                  {avatarEl}
-                </Dropdown>
-              ) : (
-                <Button
-                  onClick={() => router.push("/login")}
-                  icon={<UserOutlined style={{ color: "#CC0000" }} />}
-                  style={{ 
-                    background: "#fff", 
-                    color: "#CC0000", 
-                    borderRadius: "8px", 
-                    fontWeight: 700, 
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    height: "36px",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontSize: "15px"
-                  }}
-                >
-                  {width > 380 ? "Login" : ""}
-                </Button>
-              )}
-            </div>
-          ) : (
-            /* mobile avatar/login */
-            <div className="flex items-center space-x-2">
-              {isLoggedIn ? (
-                <Dropdown overlay={avatarMenu} placement="bottomRight">
-                  {avatarEl}
-                </Dropdown>
-              ) : (
-                <Button
-                  onClick={() => router.push("/login")}
-                  icon={<UserOutlined style={{ color: "#CC0000" }} />}
-                  style={{ 
-                    background: "#fff", 
-                    color: "#CC0000", 
-                    borderRadius: "8px", 
-                    fontWeight: 700, 
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    height: "36px",
-                    fontFamily: "'Nunito', sans-serif",
-                    fontSize: "15px"
-                  }}
-                >
-                  {width > 380 ? "Login" : ""}
-                </Button>
-              )}
-            </div>
-          )}
+          {/* right: avatar/login */}
+          <div className="flex items-center space-x-2">
+            {isLoggedIn ? (
+              <Dropdown overlay={avatarMenu} placement="bottomRight">
+                {avatarEl}
+              </Dropdown>
+            ) : (
+              <Button
+                onClick={() => router.push("/login")}
+                icon={<UserOutlined style={{ color: "#CC0000" }} />}
+                style={{ 
+                  background: "#fff", 
+                  color: "#CC0000", 
+                  borderRadius: "8px", 
+                  fontWeight: 700, 
+                  border: "none",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  height: "36px",
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: "15px"
+                }}
+              >
+                {width > 380 ? "Login" : ""}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -378,29 +294,6 @@ const NavBar = () => {
                 }}>
                   My Profile
                 </span>
-              </div>
-              
-              {/* Top links in the menu */}
-              <div className="mt-2 pt-2 border-t border-gray-100">
-                {topLinks.map(({ href, label, icon }) => (
-                  <div 
-                    key={href}
-                    className={`flex items-center px-6 py-3 ${pathname === href ? 'bg-red-50' : 'hover:bg-gray-50'} cursor-pointer transition-colors`}
-                    onClick={() => {
-                      router.push(href);
-                      setDrawerOpen(false);
-                    }}
-                  >
-                    {React.cloneElement(icon, { style: { fontSize: 18, color: "#CC0000", marginRight: 12 } })}
-                    <span style={{ 
-                      fontWeight: pathname === href ? 700 : 600,
-                      fontSize: '16px',
-                      color: '#333'
-                    }}>
-                      {label}
-                    </span>
-                  </div>
-                ))}
               </div>
               
               {/* Logout */}
