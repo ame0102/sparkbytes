@@ -20,8 +20,7 @@ export default function ProfilePage() {
     name: "",
     email: "",
     bio: "",
-    phone: "",
-    location: "",
+
   });
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,8 +54,6 @@ export default function ProfilePage() {
         name: user.user_metadata?.name ?? "",
         email: user.email ?? "",
         bio: user.user_metadata?.bio ?? "",
-        phone: user.user_metadata?.phone ?? "",
-        location: user.user_metadata?.location ?? "",
       });
     })();
   }, [router]);
@@ -195,24 +192,8 @@ export default function ProfilePage() {
                   rows={3}
                   placeholder="Bio"
                 />
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
-                  placeholder="Phone"
-                />
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
-                  placeholder="Location"
-                />
+    
+  
               </div>
             ) : (
               <div className="text-center space-y-2">
@@ -223,12 +204,7 @@ export default function ProfilePage() {
                 {formData.bio && (
                   <p className="text-gray-700">{formData.bio}</p>
                 )}
-                {formData.phone && (
-                  <p className="text-gray-600">{formData.phone}</p>
-                )}
-                {formData.location && (
-                  <p className="text-gray-600">{formData.location}</p>
-                )}
+
               </div>
             )}
 
