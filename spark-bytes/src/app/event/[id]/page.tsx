@@ -21,6 +21,16 @@ export default function EventDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+  
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -178,7 +188,7 @@ export default function EventDetailPage() {
                       Reply
                     </Button>
 
-                    {!comment.deleted && (
+                    {!comment.deleted && currentUser?.id === comment.user_id && (
                       <Button
                         type="text"
                         size="small"
