@@ -301,7 +301,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         time: dayjs(values.time).format("h:mm a"),
         location: values.location,
         address: values.address,
-        description: values.description,
+        room: values.room,
         dietary: values.dietary,
         dietaryComment: values.dietaryComment || null,
         food: values.food,
@@ -378,6 +378,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         />
       </FormItem>
 
+      <Form.Item name="room" label="Room/Unit" rules={[]}>
+        <Input placeholder="e.g. Room 210, Unit 2" />
+      </Form.Item>
+
       <FormItem
         name="dietary"
         label="Dietary Options"
@@ -428,10 +432,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
       <FormItem
         name="food"
-        label="Food Availability"
-        rules={[{ required: true, message: "Please enter all food availability" }]}
+        label="Food Options"
+        rules={[{ required: true, message: "Please enter all food options" }]}
       >
-        <TextArea rows={4} placeholder="Enter all food availability" className="rounded-textarea" />
+        <TextArea rows={4} placeholder="Enter all food options" className="rounded-textarea" />
       </FormItem>
 
       <FormItem
