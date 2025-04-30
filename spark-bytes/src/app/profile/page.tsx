@@ -266,13 +266,13 @@ export default function ProfilePage() {
                         onClick={() => { setSortMode("recent"); setSortDropdownOpen(false); setCurrentPage(1); }}
                         className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center space-x-2"
                       >
-                        <span>Recent First</span>
+                        <span>New to Old</span>
                       </button>
                       <button
                         onClick={() => { setSortMode("past"); setSortDropdownOpen(false); setCurrentPage(1); }}
                         className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center space-x-2"
                       >
-                        <span>Past First</span>
+                        <span>Old to New</span>
                       </button>
                     </div>
                   )}
