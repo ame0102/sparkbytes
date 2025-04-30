@@ -35,12 +35,12 @@ export default function Home() {
 
   // filters
   const [locFilter,  setLocFilter]  = useState<string[]>([]);
-  const [timeFilter, setTimeFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("new_to_old");
   const [dietFilter, setDietFilter] = useState<string[]>([]);
 
   // pagination
   const [page, setPage] = useState(1);
-  const pageSize        = 10;
+  const pageSize        = 8;
 
   // create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -101,23 +101,45 @@ export default function Home() {
     .filter(e => e.title.toLowerCase().includes(query.toLowerCase()))
     .filter(e => !locFilter.length || locFilter.includes(e.location))
     .filter(e => {
-      if (timeFilter === "all") return true;
-      const ev = dayjs(e.date);
-      if (timeFilter === "current") return ev.isBefore(now) && !e.ended;
-      if (timeFilter === "next_day")    return ev.isAfter(now)   && ev.diff(now, "hour")  <= 24;
-      if (timeFilter === "next_3days")  return ev.isAfter(now)   && ev.diff(now, "day")   <= 3;
-      if (timeFilter === "next_week")   return ev.isAfter(now)   && ev.diff(now, "day")   <= 7;
-      if (timeFilter === "next_3months")return ev.isAfter(now)   && ev.diff(now, "month") <= 3;
+      const evDate = dayjs(e.date);
+      if (timeFilter === "happening_now") return evDate.isBefore(now) && !e.ended;
+      if (timeFilter === "coming_up")     return evDate.isAfter(now) && !e.ended;
+      if (timeFilter === "past")          return e.ended === true;
       return true;
-    })
-    .filter(e => {
-      if (!dietFilter.length) return true;
-      return (e.dietary || []).some((d: string) => dietFilter.includes(d));
-    });
+    })    
+
+    const sorted = [...filtered].sort((a, b) => {
+      const da = dayjs(a.date).valueOf();
+      const db = dayjs(b.date).valueOf();
+    
+      const aStatus = a.ended
+        ? 2 // Past
+        : dayjs(a.date).isBefore(now)
+          ? 0 // Happening now
+          : 1; // Coming up
+    
+      const bStatus = b.ended
+        ? 2
+        : dayjs(b.date).isBefore(now)
+          ? 0
+          : 1;
+    
+      if (timeFilter === "new_to_old") {
+        if (aStatus !== bStatus) return aStatus - bStatus;
+        return db - da;
+      }
+    
+      if (timeFilter === "old_to_new") {
+        if (aStatus !== bStatus) return aStatus - bStatus;
+        return da - db;
+      }
+    
+      return 0;
+    });    
 
   // pagination slice
-  const total = filtered.length;
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const total = sorted.length;
+  const paged = sorted.slice((page - 1) * pageSize, page * pageSize);
 
   if (authChecked && unauth) {
     router.push('/login');
@@ -205,12 +227,11 @@ export default function Home() {
                       onChange={setTimeFilter}
                       style={{ width: "100%", marginTop: 8 }}
                     >
-                      <Option value="all">All Time</Option>
-                      <Option value="current">Current</Option>
-                      <Option value="next_day">Next 1 Day</Option>
-                      <Option value="next_3days">Next 3 Days</Option>
-                      <Option value="next_week">Next 1 Week</Option>
-                      <Option value="next_3months">Next 3 Months</Option>
+                      <Option value="new_to_old">New to Old</Option>
+                      <Option value="old_to_new">Old to New</Option>
+                      <Option value="happening_now">Happening Now</Option>
+                      <Option value="coming_up">Coming Up</Option>
+                      <Option value="past">Past</Option>
                     </Select>
                   </div>
 
@@ -238,7 +259,7 @@ export default function Home() {
                       size="small"
                       onClick={() => {
                         setLocFilter([]);
-                        setTimeFilter("all");
+                        setTimeFilter("new_to_old");
                         setDietFilter([]);
                       }}
                     >
