@@ -21,6 +21,7 @@ export async function createEvent(eventData: any) {
       time: eventData.time,
       location: eventData.location,
       address: eventData.address,
+      room: eventData.room,
       food: eventData.food,
       dietary: eventData.dietary,
       dietary_comment: eventData.dietaryComment || null,
