@@ -7,12 +7,19 @@ import { EnvironmentOutlined, StarFilled } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
 import { getFavoriteEvents, removeFavorite } from "@/utils/eventApi";
 import dayjs from "dayjs";
+import Pagination from "antd/lib/pagination";
+import { Dropdown, Menu, Select } from "antd";
+import { FilterOutlined } from "@ant-design/icons";
 
 export default function FavoritesPage() {
   const [favoriteEvents, setFavoriteEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [pulsingId, setPulsingId] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState("new_to_old");
+  const now = dayjs();
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
 
   useEffect(() => {
     (async () => {
@@ -69,9 +76,47 @@ export default function FavoritesPage() {
       >
         <div style={{ margin: "2rem 0 1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ fontSize: 28, fontWeight: "bold" }}>My Favorites</h2>
-          <Button type="primary" style={{ background: "#CC0000" }} onClick={() => window.location.href = "/"}>
-            Back to Events
-          </Button>
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu style={{ padding: 12, width: 280 }}>
+                <div>
+                  <strong>Time</strong>
+                  <Select
+                    value={timeFilter}
+                    onChange={setTimeFilter}
+                    style={{ width: "100%", marginTop: 8 }}
+                  >
+                    <Select.Option value="new_to_old">New to Old</Select.Option>
+                    <Select.Option value="old_to_new">Old to New</Select.Option>
+                    <Select.Option value="happening_now">Happening Now</Select.Option>
+                    <Select.Option value="coming_up">Coming Up</Select.Option>
+                    <Select.Option value="past">Past</Select.Option>
+                  </Select>
+                </div>
+
+                {/* Reset button */}
+                <div style={{ marginTop: 16, textAlign: "right" }}>
+                  <Button
+                    type="default"
+                    size="small"
+                    onClick={() => setTimeFilter("new_to_old")}
+                  >
+                    Reset Filter
+                  </Button>
+                </div>
+              </Menu>
+            }
+          >
+            <Button
+              size="large"
+              icon={<FilterOutlined />}
+              style={{ borderRadius: 8 }}
+            >
+              Filters
+            </Button>
+          </Dropdown>
+
         </div>
 
         {loading ? (
@@ -99,7 +144,41 @@ export default function FavoritesPage() {
               gap: "1.5rem"
             }}
           >
-            {favoriteEvents.map(ev => (
+            {[...favoriteEvents]
+              .filter(ev => {
+                const evDate = dayjs(ev.date);
+                if (timeFilter === "happening_now") return evDate.isBefore(now) && !ev.ended;
+                if (timeFilter === "coming_up")     return evDate.isAfter(now) && !ev.ended;
+                if (timeFilter === "past")          return ev.ended === true;
+                return true;
+              })
+              .sort((a, b) => {
+                const da = dayjs(a.date).valueOf();
+                const db = dayjs(b.date).valueOf();
+
+                const aStatus = a.ended
+                  ? 2
+                  : dayjs(a.date).isBefore(now)
+                    ? 0
+                    : 1;
+                const bStatus = b.ended
+                  ? 2
+                  : dayjs(b.date).isBefore(now)
+                    ? 0
+                    : 1;
+
+                if (timeFilter === "new_to_old") {
+                  if (aStatus !== bStatus) return aStatus - bStatus;
+                  return db - da;
+                }
+                if (timeFilter === "old_to_new") {
+                  if (aStatus !== bStatus) return aStatus - bStatus;
+                  return da - db;
+                }
+                return 0;
+              })
+              .slice((page - 1) * pageSize, page * pageSize)
+              .map(ev => (
               <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none" }}>
                 <div
                   style={{
@@ -226,7 +305,26 @@ export default function FavoritesPage() {
             ))}
           </div>
         )}
+        {favoriteEvents.length > pageSize && (
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <Pagination
+              current={page}
+              pageSize={pageSize}
+              total={
+                favoriteEvents.filter(ev => {
+                  const evDate = dayjs(ev.date);
+                  if (timeFilter === "happening_now") return evDate.isBefore(now) && !ev.ended;
+                  if (timeFilter === "coming_up")     return evDate.isAfter(now) && !ev.ended;
+                  if (timeFilter === "past")          return ev.ended === true;
+                  return true;
+                }).length
+              }
+              onChange={p => setPage(p)}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
       </main>
     </>
   );
-}
+  }
