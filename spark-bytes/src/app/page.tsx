@@ -282,6 +282,9 @@ export default function Home() {
                 Filters
               </Button>
             </Dropdown>
+            <span style={{ fontSize: 16, color: "#999" }}>
+              {total} events
+            </span>
           </div>
 
           {/* Create Event Button */}
