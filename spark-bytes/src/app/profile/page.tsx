@@ -325,8 +325,10 @@ export default function ProfilePage() {
   // Filter events based on current filter and sort modes
   const filteredEvents = myEvents.filter(ev => {
     if (filterMode === "all") return true;
-    // Show only non-ended events from today and future dates
-    return isActiveDate(ev.date) && !ev.ended;
+  
+    const eventDateTime = dayjs(`${ev.date} ${ev.time}`);
+    
+    return eventDateTime.isBefore(now) && !ev.ended;
   }).sort((a, b) => {
     // Parse dates with proper format
     const aDate = dayjs(a.date);
