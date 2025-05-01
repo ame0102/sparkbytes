@@ -308,7 +308,7 @@ export default function EventDetailPage() {
   }
 
   if (!event) {
-    router.push("/404");
+    router.push("/login");
     return null;
   }
 
