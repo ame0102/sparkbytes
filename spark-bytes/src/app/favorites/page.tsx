@@ -272,7 +272,7 @@ export default function FavoritesPage() {
                       {ev.title}
                     </h3>
                     <p style={{ margin: "4px 0", color: "#555", fontSize: 12 }}>
-                      {fmt(ev.date)} · {ev.time}
+                      {fmt(ev.date)} · {dayjs('2000-01-01 ' + ev.time).format('h:mm A')}
                     </p>
 
                     {ev.portions !== undefined && (
