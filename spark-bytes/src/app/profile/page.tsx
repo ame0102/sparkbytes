@@ -544,19 +544,13 @@ export default function ProfilePage() {
                     <p className="mt-4 text-gray-600">Loading your events...</p>
                   </div>
                 </div>
-              ) : myEvents.length === 0 ? (
-                <div className="py-12 flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <CalendarOutlined style={{ fontSize: 32, color: "#999" }} />
+              ) : filteredEvents.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center text-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <CalendarOutlined style={{ fontSize: 32, color: "#999" }} />
+                    </div>
+                    <p className="text-gray-600 mb-6">No events.</p>
                   </div>
-                  <p className="text-gray-600 mb-6">You haven't posted any events yet.</p>
-                  <button 
-                    onClick={() => router.push('/')}
-                    className="px-4 py-2 bg-[#CC0000] text-white rounded-lg hover:bg-[#aa0000] transition-colors"
-                  >
-                    Create Your First Event
-                  </button>
-                </div>
               ) : (
                 <>
                   <div className="divide-y divide-gray-100">
