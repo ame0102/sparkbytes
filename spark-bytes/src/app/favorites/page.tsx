@@ -113,7 +113,6 @@ export default function FavoritesPage() {
                     <Select.Option value="old_to_new">Old to New</Select.Option>
                     <Select.Option value="happening_now">Happening Now</Select.Option>
                     <Select.Option value="coming_up">Coming Up</Select.Option>
-                    <Select.Option value="past">Past</Select.Option>
                   </Select>
                 </div>
 
@@ -168,16 +167,23 @@ export default function FavoritesPage() {
           >
             {[...favoriteEvents]
               .filter(ev => {
-                const evDate = dayjs(ev.date);
-                if (timeFilter === "happening_now") return evDate.isBefore(now) && !ev.ended;
-                if (timeFilter === "coming_up")     return evDate.isAfter(now) && !ev.ended;
+                const evDateTime = dayjs(`${ev.date} ${ev.time}`);
+                if (timeFilter === "happening_now") return evDateTime.isBefore(now) && !ev.ended;
+                if (timeFilter === "coming_up")     return evDateTime.isAfter(now) && !ev.ended;
                 if (timeFilter === "past")          return ev.ended === true;
                 return true;
-              })
+              })              
               .sort((a, b) => {
                 const da = dayjs(a.date).valueOf();
                 const db = dayjs(b.date).valueOf();
-
+              
+                if (timeFilter === "new_to_old") {
+                  return db - da; // Newest first
+                }
+                if (timeFilter === "old_to_new") {
+                  return da - db; // Oldest first
+                }
+              
                 const aStatus = a.ended
                   ? 2
                   : dayjs(a.date).isBefore(now)
@@ -188,17 +194,9 @@ export default function FavoritesPage() {
                   : dayjs(b.date).isBefore(now)
                     ? 0
                     : 1;
-
-                if (timeFilter === "new_to_old") {
-                  if (aStatus !== bStatus) return aStatus - bStatus;
-                  return db - da;
-                }
-                if (timeFilter === "old_to_new") {
-                  if (aStatus !== bStatus) return aStatus - bStatus;
-                  return da - db;
-                }
-                return 0;
-              })
+              
+                return aStatus - bStatus;
+              })              
               .slice((page - 1) * pageSize, page * pageSize)
               .map(ev => (
               <Link key={ev.id} href={`/event/${ev.id}`} style={{ textDecoration: "none" }}>
