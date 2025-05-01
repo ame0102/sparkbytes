@@ -351,17 +351,26 @@ export default function EventDetailPage() {
                   
                   {/* Address with Google Maps link */}
                   {event.address && (
-                    <Text>
-                      <EnvironmentOutlined style={{ marginRight: 8 }} />
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#1677ff' }}
-                      >
-                        {event.address}
-                      </a>
-                    </Text>
+                    <div>
+                      <Text>
+                        <EnvironmentOutlined style={{ marginRight: 8 }} />
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#1677ff' }}
+                        >
+                          {event.address}
+                        </a>
+                      </Text>
+                      {event.room && (
+                        <div style={{ marginTop: 4, marginLeft: 24 }}>
+                          <Text type="secondary" style={{ fontSize: 14 }}>
+                            Room/Unit: {event.room}
+                          </Text>
+                        </div>
+                      )}
+                    </div>
                   )}
                   
                   {/* Food info */}

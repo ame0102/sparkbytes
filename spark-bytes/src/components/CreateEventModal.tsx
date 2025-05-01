@@ -333,6 +333,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         time: formattedTime, // Using 24-hour format for database consistency
         location: values.location,
         address: values.address,
+        room: values.room,
         description: values.description,
         dietary: values.dietary,
         dietaryComment: values.dietaryComment || null,
@@ -421,6 +422,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
             onChange={handleAddressChange}
           />
         </FormItem>
+
+        <Form.Item name="room" label="Room/Unit" rules={[]}>
+          <Input placeholder="e.g. Room 210, Unit 2" />
+        </Form.Item>
 
         <FormItem
           name="dietary"
