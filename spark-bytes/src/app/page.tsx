@@ -110,7 +110,7 @@ export default function Home() {
       switch (timeFilter) {
         case "happening_now":
           // today’s events that have started and not ended
-          return dt.isSame(now, "day") && dt.isBefore(now) && !e.ended;
+          return dt.isBefore(now) && !e.ended;
         case "coming_up":
           // strictly in the future and not ended
           return dt.isAfter(now) && !e.ended;
@@ -132,7 +132,7 @@ export default function Home() {
       // Newest first
       return bDT.valueOf() - aDT.valueOf();
     }
-    if (timeFilter === "old_to_new") {
+    if (timeFilter === "old_to_new" || timeFilter === "coming_up" ) {
       // Oldest first
       return aDT.valueOf() - bDT.valueOf();
     }
@@ -226,7 +226,6 @@ export default function Home() {
                       <Option value="old_to_new">Old to New</Option>
                       <Option value="happening_now">Happening Now</Option>
                       <Option value="coming_up">Coming Up</Option>
-                      <Option value="past">Past</Option>
                     </Select>
                   </div>
 
