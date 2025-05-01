@@ -342,7 +342,7 @@ export default function Home() {
                   style={{
                     position: "absolute",
                     top: 10,
-                    left: 10,
+                    right: 15,
                     background: "white",
                     borderRadius: "50%",
                     padding: 8,
