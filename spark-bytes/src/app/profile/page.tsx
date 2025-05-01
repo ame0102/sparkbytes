@@ -31,7 +31,7 @@ export default function ProfilePage() {
   // events states
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
-  const [filterMode, setFilterMode] = useState<"active" | "all">("active");
+  const [filterMode, setFilterMode] = useState<"active" | "all" | "upcoming">("all");;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [sortMode, setSortMode] = useState<"recent" | "past">("recent");
@@ -324,11 +324,13 @@ export default function ProfilePage() {
 
   // Filter events based on current filter and sort modes
   const filteredEvents = myEvents.filter(ev => {
-    if (filterMode === "all") return true;
-  
     const eventDateTime = dayjs(`${ev.date} ${ev.time}`);
-    
-    return eventDateTime.isBefore(now) && !ev.ended;
+  
+    if (filterMode === "all") return true;
+    if (filterMode === "active") return eventDateTime.isBefore(now) && !ev.ended;
+    if (filterMode === "upcoming") return eventDateTime.isAfter(now) && !ev.ended;
+  
+    return true;
   }).sort((a, b) => {
     // Parse dates with proper format
     const aDate = dayjs(a.date);
@@ -510,7 +512,13 @@ export default function ProfilePage() {
                     className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors"
                   >
                     <FilterOutlined />
-                    <span>{filterMode === "active" ? "Active" : "All"}</span>
+                    <span>
+                      {filterMode === "active"
+                        ? "Active"
+                        : filterMode === "upcoming"
+                        ? "Upcoming"
+                        : "All"}
+                    </span>
                   </button>
 
                   {dropdownOpen && (
@@ -521,6 +529,13 @@ export default function ProfilePage() {
                       >
                         <CheckCircleOutlined style={{ color: filterMode === "active" ? "#CC0000" : "#999" }} />
                         <span>Active Events</span>
+                      </button>
+                      <button
+                        onClick={() => { setFilterMode("upcoming"); setDropdownOpen(false); setCurrentPage(1); }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <CheckCircleOutlined style={{ color: filterMode === "upcoming" ? "#CC0000" : "#999" }} />
+                        <span>Upcoming Events</span>
                       </button>
                       <button
                         onClick={() => { setFilterMode("all"); setDropdownOpen(false); setCurrentPage(1); }}
