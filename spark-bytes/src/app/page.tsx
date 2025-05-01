@@ -101,6 +101,7 @@ export default function Home() {
       return evDiet.some((tag: string) => dietFilter.includes(tag));
     })
     .filter(e => e.title.toLowerCase().includes(query.toLowerCase()))
+    .filter(e => !e.ended)
     // location filter
     .filter(e => !locFilter.length || locFilter.includes(e.location))
     // time‐based filter (uses both date + time)
