@@ -502,7 +502,7 @@ export default function EventDetailPage() {
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CommentOutlined style={{ color: '#CC0000' }} />
-                <span>Comments ({comments.filter(c => !c.parent_id).length})</span>
+                <span>Comments ({comments.length})</span>
               </div>
             }
             style={{ 
