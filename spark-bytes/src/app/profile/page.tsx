@@ -436,12 +436,19 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* profile actions */}
             <div className="flex gap-4">
               {isEditing ? (
                 <>
                   <button
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => {
+                      // Reset form data to original values and exit edit mode
+                      setFormData({
+                        name: user?.user_metadata?.name || user?.name || formData.name,
+                        email: formData.email,
+                        bio: user?.user_metadata?.bio || user?.bio || formData.bio,
+                      });
+                      setIsEditing(false);
+                    }}
                     className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
                     disabled={saving}
                   >
@@ -467,7 +474,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* MY EVENTS - ENHANCED UI */}
         <div className="md:col-span-2">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             {/* Header with filter and sort */}
