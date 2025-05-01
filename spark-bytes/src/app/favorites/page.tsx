@@ -11,6 +11,8 @@ import dayjs from "dayjs";
 import Pagination from "antd/lib/pagination";
 import { Dropdown, Menu, Select } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabaseClient";
 
 export default function FavoritesPage() {
   const [favoriteEvents, setFavoriteEvents] = useState<any[]>([]);
@@ -21,6 +23,25 @@ export default function FavoritesPage() {
   const now = dayjs();
   const [page, setPage] = useState(1);
   const pageSize = 8;
+  const router = useRouter();
+  
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push("/login");
+        return;
+      }
+
+      setLoading(true);
+      const events = await getFavoriteEvents();
+      setFavoriteEvents(events || []);
+      setLoading(false);
+    })();
+  }, [router]);
 
   useEffect(() => {
     (async () => {
