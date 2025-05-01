@@ -541,10 +541,10 @@ export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdate
         
         <FormItem 
           name="food" 
-          label="Food Availability" 
+          label="Food Options" 
           rules={[{ required: true, message: 'Please describe the food available' }]}
         >
-          <TextArea rows={4} placeholder="Enter all food availability" className="rounded-textarea" />
+          <TextArea rows={4} placeholder="Enter all food options" className="rounded-textarea" />
         </FormItem>
         
         <FormItem 
