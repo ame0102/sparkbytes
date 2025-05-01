@@ -388,9 +388,26 @@ export default function EventDetailPage() {
             <div style={{ padding: 24 }}>
               {/* Event info */}
               <div style={{ marginBottom: 20 }}>
-                <Title level={2} style={{ margin: '0 0 8px 0' }}>
-                  {event.title}
-                </Title>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Title level={2} style={{ margin: 0 }}>
+                    {event.title}
+                  </Title>
+                  {event.ended && (
+                    <span
+                      style={{
+                        backgroundColor: '#CC0000',
+                        color: 'white',
+                        fontSize: 12,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        height: 'fit-content',
+                        lineHeight: '1'
+                      }}
+                    >
+                      Ended
+                    </span>
+                  )}
+                </div>
                 
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   {/* Creator name with enhanced display */}
