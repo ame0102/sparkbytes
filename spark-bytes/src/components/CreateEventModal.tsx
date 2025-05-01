@@ -477,10 +477,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
         <FormItem
           name="food"
-          label="Food Availability"
-          rules={[{ required: true, message: "Please enter all food availability" }]}
+          label="Food Options"
+          rules={[{ required: true, message: "Please enter all food options" }]}
         >
-          <TextArea rows={4} placeholder="Enter all food availability" className="rounded-textarea" />
+          <TextArea rows={4} placeholder="Enter all food options" className="rounded-textarea" />
         </FormItem>
 
         <FormItem
