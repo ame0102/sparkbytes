@@ -192,7 +192,21 @@ export default function Home() {
           }}
         >
           <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-        
+            <Input
+              placeholder="Search event titles..."
+              allowClear
+              value={query}
+              prefix={<SearchOutlined style={{ color: "#999" }} />}
+              onChange={(e) => setQuery(e.target.value)}
+              onPressEnter={() => {
+                router.push(`/?search=${encodeURIComponent(query.trim())}`);
+              }}
+              style={{
+                width: 300, 
+                height: 40,          
+                borderRadius: 8,         
+              }}
+            />
             <Dropdown
               trigger={["click"]}
               overlay={
