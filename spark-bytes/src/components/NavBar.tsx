@@ -200,9 +200,9 @@ const NavBar = () => {
           className="flex justify-between items-center"
           style={{
             height: 70,
-            paddingLeft: "1.5rem",
-            paddingRight: "2.5rem",
-            maxWidth: "calc(100% - 2.5in)",
+            paddingLeft: "0.75rem",
+            paddingRight: "0.75rem",
+            maxWidth: "100%",
             margin: "0 auto",
             width: "100%",
           }}
