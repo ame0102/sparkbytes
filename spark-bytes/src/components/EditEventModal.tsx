@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Form, Input, Select, DatePicker, TimePicker, InputNumber, Button, message, Spin } from "antd";
 import { getEventById } from "@/utils/eventApi";
 import { supabase } from "@/utils/supabaseClient";
@@ -8,13 +8,11 @@ import dayjs from "dayjs";
 import { EnvironmentOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
-const { TextArea } = Input;
+const TextArea = Input.TextArea;
 const FormItem = Form.Item;
 
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Nut Free", "Other", "None"];
 const locationOptions = ["East", "Central", "West", "South", "Fenway"];
-
-// Comprehensive list of Boston University Campus addresses
 const buAddresses = [
   // Main Administrative Buildings
   "1 Silber Way, Boston, MA 02215", // Boston University Admissions Building
@@ -151,23 +149,30 @@ const buAddresses = [
 ];
 
 // Address Autocomplete Component with local BU campus data
-const BUAddressAutocomplete = ({ 
-  value, 
+interface BUAddressAutocompleteProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+const BUAddressAutocomplete: React.FC<BUAddressAutocompleteProps> = ({ 
+  value = "", 
   onChange, 
   placeholder, 
   className = ""
 }) => {
   const [inputValue, setInputValue] = useState(value || "");
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   useEffect(() => {
     if (value !== inputValue) {
       setInputValue(value || "");
     }
-  }, [value]);
+  }, [value, inputValue]);
 
-  const findMatches = (text) => {
+  const findMatches = (text: string) => {
     if (!text || text.length < 2) {
       return [];
     }
@@ -176,7 +181,7 @@ const BUAddressAutocomplete = ({
     return buAddresses.filter(address => address.match(regex));
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     onChange?.(newValue);
@@ -186,7 +191,7 @@ const BUAddressAutocomplete = ({
     setShowSuggestions(true);
   };
 
-  const handleSuggestionClick = (address) => {
+  const handleSuggestionClick = (address: string) => {
     setInputValue(address);
     onChange?.(address);
     setSuggestions([]);
@@ -225,7 +230,16 @@ const BUAddressAutocomplete = ({
   );
 };
 
-const CustomButton = (props) => (
+interface CustomButtonProps {
+  onClick?: () => void;
+  type?: "primary" | "default" | "dashed" | "link" | "text";
+  loading?: boolean;
+  style?: React.CSSProperties;
+  text: string;
+  icon?: React.ReactNode;
+}
+
+const CustomButton: React.FC<CustomButtonProps> = (props) => (
   <Button
     onClick={props.onClick}
     type={props.type}
@@ -237,25 +251,53 @@ const CustomButton = (props) => (
   </Button>
 );
 
-export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdated }) {
+interface EditEventModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  eventId: string | null;
+  onEventUpdated: () => void;
+}
+
+export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdated }: EditEventModalProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(false);
-  const [selectedDietary, setSelectedDietary] = useState([]);
+  const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
+  const [addressValue, setAddressValue] = useState<string>("");
 
   useEffect(() => {
+    // only run when opened with a valid ID
     if (!eventId || !isOpen) return;
-    
-    const fetchEventData = async () => {
-      try {
-        setFetchingData(true);
-        const data = await getEventById(eventId);
+    setFetchingData(true);
+  
+    getEventById(eventId)
+      .then((data) => {
+        // Parse date correctly
+        const parsedDate = data.date ? dayjs(data.date) : null;
         
-        // Convert date and time strings to dayjs objects
+        // Parse time correctly - IMPORTANT for fixing format issues
+        // Strip any AM/PM notation and ensure it's in 24-hour format
+        let timeValue = null;
+        if (data.time) {
+          // Try to parse the time safely
+          timeValue = dayjs(`2023-01-01 ${data.time}`, "YYYY-MM-DD HH:mm:ss");
+          if (!timeValue.isValid()) {
+            // Alternative parsing for 12-hour format
+            const matches = data.time.match(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?/i);
+            if (matches) {
+              let [_, hours, minutes, seconds, period] = matches;
+              if (period && period.toLowerCase() === "pm" && hours !== "12") {
+                hours = String(parseInt(hours, 10) + 12);
+              }
+              timeValue = dayjs(`2023-01-01 ${hours}:${minutes}:${seconds || "00"}`, "YYYY-MM-DD HH:mm:ss");
+            }
+          }
+        }
+  
         form.setFieldsValue({
           title: data.title,
-          date: data.date ? dayjs(data.date) : null,
-          time: data.time ? dayjs(data.time, "h:mm a") : null,
+          date: parsedDate,
+          time: timeValue,
           location: data.location,
           address: data.address,
           food: data.food,
@@ -263,50 +305,114 @@ export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdate
           dietaryComment: data.dietary_comment,
           portions: data.portions,
         });
-
-        // Update selectedDietary state
+  
+        // Update state values
         setSelectedDietary(data.dietary || []);
-      } catch (error) {
-        console.error("Error fetching event data:", error);
+        setAddressValue(data.address || "");
+      })
+      .catch((err) => {
+        console.error("Error fetching event data:", err);
         message.error("Failed to load event data");
-      } finally {
+      })
+      .finally(() => {
         setFetchingData(false);
-      }
-    };
-
-    fetchEventData();
+      });
   }, [eventId, isOpen, form]);
+  
+  // Update address value separately to avoid circular refs
+  const handleAddressChange = (value: string) => {
+    setAddressValue(value);
+    form.setFieldsValue({ address: value });
+  };
 
   const handleSubmit = async () => {
-    if (!eventId) return;
+    if (!eventId) {
+      message.error("No event ID provided");
+      return;
+    }
     
     try {
       setLoading(true);
+      
+      // Get current user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error("Session error:", sessionError);
+        throw new Error("Authentication error - please log in again");
+      }
+      
+      const user = session.user;
+      
+      // Validate form fields
       const values = await form.validateFields();
       
+      // Format date to YYYY-MM-DD
+      const formattedDate = values.date ? dayjs(values.date).format("YYYY-MM-DD") : null;
+      
+      // Format time to 24-hour format (HH:mm:ss) - CRITICAL FIX
+      let formattedTime = null;
+      if (values.time) {
+        formattedTime = dayjs(values.time).format("HH:mm:ss");
+      }
+      
+      // Validate essential data
+      if (!formattedDate) {
+        message.error("Please select a valid date");
+        setLoading(false);
+        return;
+      }
+      
+      if (!formattedTime) {
+        message.error("Please select a valid time");
+        setLoading(false);
+        return;
+      }
+
+      // Create the update data
+      const updateData = {
+        id: eventId,
+        title: values.title,
+        date: formattedDate,
+        time: formattedTime,
+        location: values.location,
+        address: values.address,
+        food: values.food,
+        dietary: values.dietary,
+        dietary_comment: values.dietaryComment || null,
+        portions: values.portions,
+      };
+      
+      console.log("Updating event with data:", updateData);
+      
+      // Simple direct update using Supabase
       const { error } = await supabase
         .from("events")
         .update({
-          title: values.title,
-          date: values.date ? dayjs(values.date).format("YYYY-MM-DD") : null,
-          time: values.time ? dayjs(values.time).format("h:mm a") : null,
-          location: values.location,
-          address: values.address,
-          food: values.food,
-          dietary: values.dietary,
-          dietary_comment: values.dietaryComment || null,
-          portions: values.portions,
+          title: updateData.title,
+          date: updateData.date,
+          time: updateData.time,
+          location: updateData.location,
+          address: updateData.address,
+          food: updateData.food,
+          dietary: updateData.dietary,
+          dietary_comment: updateData.dietary_comment,
+          portions: updateData.portions,
         })
-        .eq("id", eventId);
+        .eq("id", eventId)
+        .eq("user_id", user.id);
 
-      if (error) throw error;
-
+      if (error) {
+        console.error("Update error:", error);
+        throw new Error(error.message || "Failed to update event");
+      }
+      
       message.success("Event updated successfully");
-      onEventUpdated(); // Call the update callback
-      onClose(); // Close the modal
-    } catch (err) {
+      onEventUpdated();
+      onClose();
+    } catch (err: any) {
       console.error("Error updating event:", err);
-      message.error("Failed to update event");
+      message.error(err?.message || "Failed to update event. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -380,6 +486,8 @@ export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdate
           <BUAddressAutocomplete 
             placeholder="Start typing to search for a BU campus address"
             className="address-input"
+            value={addressValue}
+            onChange={handleAddressChange}
           />
         </FormItem>
         
@@ -393,11 +501,11 @@ export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdate
             placeholder="Select dietary options"
             value={selectedDietary}
             className="rounded-select"
-            onChange={(value) => {
+            onChange={(value: string[]) => {
               // If "None" is selected, override all other selections
               if (value.includes("None")) {
                 setSelectedDietary(["None"]);
-                form.setFieldsValue({ dietary: ["None"] });
+                form.setFieldsValue({ dietary: ["None"] as string[] });
               } else {
                 // Prevent "None" from being selected with others
                 const filtered = value.filter((v) => v !== "None");
@@ -413,7 +521,7 @@ export default function EditEventModal({ isOpen, onClose, eventId, onEventUpdate
                 disabled={
                   (selectedDietary.includes("None") && option !== "None") ||
                   (option === "None" && selectedDietary.length > 0 && !selectedDietary.includes("None"))
-                }
+                } as boolean
               >
                 {option}
               </Option>

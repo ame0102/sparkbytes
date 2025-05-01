@@ -88,55 +88,58 @@ export default function Home() {
     "Vegan","Vegetarian","Gluten Free","Dairy Free","Nut Free","Other","None"
   ];
 
-  // search handler
-  const onSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setQuery(v);
-    router.replace(v.trim() ? `/?search=${encodeURIComponent(v.trim())}` : "/");
-  };
+
 
   // filter pipeline
   const now = dayjs();
+
   const filtered = events
-    .filter(e => e.title.toLowerCase().includes(query.toLowerCase()))
-    .filter(e => !locFilter.length || locFilter.includes(e.location))
+    // text search
     .filter(e => {
-      const evDate = dayjs(e.date);
-      if (timeFilter === "happening_now") return evDate.isBefore(now) && !e.ended;
-      if (timeFilter === "coming_up")     return evDate.isAfter(now) && !e.ended;
-      if (timeFilter === "past")          return e.ended === true;
-      return true;
-    })    
-
-    const sorted = [...filtered].sort((a, b) => {
-      const da = dayjs(a.date).valueOf();
-      const db = dayjs(b.date).valueOf();
+      if (!dietFilter.length) return true;
+      const evDiet = Array.isArray(e.dietary) ? e.dietary : [];
+      return evDiet.some((tag: string) => dietFilter.includes(tag));
+    })
+    .filter(e => e.title.toLowerCase().includes(query.toLowerCase()))
+    // location filter
+    .filter(e => !locFilter.length || locFilter.includes(e.location))
+    // time‐based filter (uses both date + time)
     
-      const aStatus = a.ended
-        ? 2 // Past
-        : dayjs(a.date).isBefore(now)
-          ? 0 // Happening now
-          : 1; // Coming up
-    
-      const bStatus = b.ended
-        ? 2
-        : dayjs(b.date).isBefore(now)
-          ? 0
-          : 1;
-    
-      if (timeFilter === "new_to_old") {
-        if (aStatus !== bStatus) return aStatus - bStatus;
-        return db - da;
+    .filter(e => {
+      const dt = dayjs(`${e.date} ${e.time}`, "YYYY-MM-DD HH:mm:ss");
+      switch (timeFilter) {
+        case "happening_now":
+          // today’s events that have started and not ended
+          return dt.isSame(now, "day") && dt.isBefore(now) && !e.ended;
+        case "coming_up":
+          // strictly in the future and not ended
+          return dt.isAfter(now) && !e.ended;
+        case "past":
+          // anything before today or manually ended
+          return dt.isBefore(now.startOf("day")) || e.ended;
+        default:
+          // for new_to_old / old_to_new include all
+          return true;
       }
+    });
+  
     
-      if (timeFilter === "old_to_new") {
-        if (aStatus !== bStatus) return aStatus - bStatus;
-        return da - db;
-      }
-    
-      return 0;
-    });    
-
+  const sorted = [...filtered].sort((a, b) => {
+    const aDT = dayjs(`${a.date} ${a.time}`, "YYYY-MM-DD HH:mm:ss");
+    const bDT = dayjs(`${b.date} ${b.time}`, "YYYY-MM-DD HH:mm:ss");
+  
+    if (timeFilter === "new_to_old") {
+      // Newest first
+      return bDT.valueOf() - aDT.valueOf();
+    }
+    if (timeFilter === "old_to_new") {
+      // Oldest first
+      return aDT.valueOf() - bDT.valueOf();
+    }
+    // default fallback: newest first
+    return bDT.valueOf() - aDT.valueOf();
+  });
+  
   // pagination slice
   const total = sorted.length;
   const paged = sorted.slice((page - 1) * pageSize, page * pageSize);
@@ -189,15 +192,7 @@ export default function Home() {
           }}
         >
           <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-            <Input
-              size="large"
-              value={query}
-              onChange={onSearchChange}
-              placeholder="Search titles…"
-              allowClear
-              prefix={<SearchOutlined style={{ color: "#888" }} />}
-              style={{ width: 300, borderRadius: 8 }}
-            />
+        
             <Dropdown
               trigger={["click"]}
               overlay={
@@ -238,19 +233,20 @@ export default function Home() {
                   <div>
                     <strong>Dietary</strong>
                     <Select
-                      mode="multiple"
-                      allowClear
-                      placeholder="Select Dietary Preferences"
-                      value={dietFilter}
-                      onChange={setDietFilter}
-                      style={{ width: "100%", marginTop: 8 }}
-                      maxTagCount={2}
-                      maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
-                    >
-                      {dietaryOptions.map(d => (
-                        <Option key={d} value={d}>{d}</Option>
-                      ))}
-                    </Select>
+  mode="multiple"
+  allowClear
+  placeholder="Select Dietary Preferences"
+  value={dietFilter}
+  onChange={setDietFilter}
+  style={{ width: "100%", marginTop: 8 }}
+  maxTagCount={2}
+  maxTagPlaceholder={omitted => `+${omitted.length} more`}
+>
+  {dietaryOptions.map(d => (
+    <Option key={d} value={d}>{d}</Option>
+  ))}
+</Select>
+
                   </div>
                   {/* Reset button */}
                   <div style={{ marginTop: 16, textAlign: "right" }}>
@@ -371,9 +367,9 @@ export default function Home() {
                     textOverflow: "ellipsis" }}>
                     {ev.title}
                   </h3>
-                  <p style={{ margin: "4px 0", color: "#555", fontSize: 12}}>
-                    {fmt(ev.date)} · {ev.time}
-                  </p>
+                  <p style={{ margin: "4px 0", color: "#555", fontSize: 12 }}>
+                  {fmt(ev.date)} · {dayjs(ev.time, "HH:mm:ss").format("h:mm A")}
+                </p>
 
                   {ev.portions !== undefined && (
                   <p

@@ -1,23 +1,20 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import NavBar from '@/components/NavBar';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function LoginPage() {
   // State management for authentication and UI
-  const [formMode, setFormMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn] = useState(false);
-  const [isGuestMode, setIsGuestMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [unauthorized, setUnauthorized] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const checkIfLoggedIn = async () => {
@@ -31,131 +28,44 @@ export default function LoginPage() {
   }, []);
 
   /**
-   * Handles form submission for login and signup
-   * Validates BU email domain for signup process
+   * Handles BU Email authentication with name
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
-    if (formMode === 'signup' && !email.endsWith('@bu.edu')) {
-      setError('Please use a valid BU email address (@bu.edu)');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      let result;
-      if (formMode === 'signup') {
-        result = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { name },
-          },
-        });
-      } else {
-        result = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-      }
-
-      const { error: authError } = result;
-      if (authError) throw authError;
-
-      router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Handles Boston University Single Sign-On authentication
-   */
-  const handleBUAuth = async () => {
-    setError('');
+    setMessage('');
     
-    // Validate BU email before continuing
+    // Validate BU email
     if (!email.endsWith('@bu.edu')) {
-      setError('Please enter a valid BU email address ending with @bu.edu');
+      setError('Please use a valid BU email address (@bu.edu)');
       return;
     }
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      // Always include name in metadata (use provided name or email prefix)
+      const finalName = name.trim() || email.split('@')[0];
+      
+      // Send magic link with name in metadata
+      const { error } = await supabase.auth.signInWithOtp({ 
+        email,
+        options: {
+          data: { 
+            name: finalName
+          }
+        }
+      });
+      
       if (error) throw error;
-      setError("Check your BU email for a login link.");
+      
+      // Show success message within the page
+      setMessage("Check your BU email for a login link. After clicking the link, you'll be signed in automatically.");
+      
     } catch (err: any) {
-      setError(err.message || 'BU authentication failed.');
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  /**
-   * Enables guest mode with limited access
-   */
-  const router = useRouter();
-
-  const handleGuestAccess = () => {
-    router.push('/guest');
-  };
-
-  /**
-   * Handles user logout and guest mode exit
-   * Resets all auth-related state variables
-   */
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsGuestMode(false);
-    setEmail('');
-    setPassword('');
-    setName('');
-  };
-
-  /**
-   * Renders an individual event card with optional limited functionality for guest users
-   * @param title - Event title
-   * @param date - Event date and time
-   * @param location - Event location
-   * @param food - Food being offered
-   * @param limited - Whether to show limited version (for guests)
-   */
-
-  type EventCardProps = {
-    title: string;
-    date: string;
-    location: string;
-    food: string;
-    limited?: boolean;
-  };
-
-  const EventCard = ({ title, date, location, food, limited = false }: EventCardProps) => {
-    return (
-      <div className={`p-4 rounded-lg border ${limited ? 'border-gray-100' : 'border-gray-200'} hover:border-gray-300 transition-colors`}>
-        <div className="flex justify-between">
-          <div>
-            <h3 className="font-medium text-gray-800">{title}</h3>
-            <p className="text-gray-500 text-sm mt-1">{date} • {location}</p>
-            <div className="flex items-center gap-1 mt-2">
-              <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
-                {food}
-              </span>
-            </div>
-          </div>
-          {!limited && (
-            <button className="flex-shrink-0 text-[#CC0000] hover:text-[#A00000] text-sm font-medium">
-              RSVP
-            </button>
-          )}
-        </div>
-      </div>
-    );
   };
 
   if (authChecked && unauthorized) {
@@ -191,79 +101,66 @@ export default function LoginPage() {
           </div>
   
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <div className="flex border-b border-gray-100">
-              <button 
-                className={`flex-1 py-3 text-center font-medium text-sm ${
-                  formMode === 'login' 
-                    ? 'text-[#CC0000] border-b-2 border-[#CC0000]' 
-                    : 'text-gray-500'
-                }`}
-                onClick={() => setFormMode('login')}
-              >
-                Sign In
-              </button>
-              <button 
-                className={`flex-1 py-3 text-center font-medium text-sm ${
-                  formMode === 'signup' 
-                    ? 'text-[#CC0000] border-b-2 border-[#CC0000]' 
-                    : 'text-gray-500'
-                }`}
-                onClick={() => setFormMode('signup')}
-              >
-                Create Account
-              </button>
-            </div>
-  
             <div className="p-6">
+              <h2 className="text-xl font-medium text-gray-800 mb-4">Sign In</h2>
+
               {error && (
                 <div className="bg-[#FFF5F5] border border-[#FFDFDF] p-3 mb-4 rounded-md">
                   <p className="text-[#CC0000] text-xs">{error}</p>
                 </div>
               )}
+
+              {message && (
+                <div className="bg-[#F0FFF4] border border-[#C6F6D5] p-3 mb-4 rounded-md">
+                  <p className="text-green-600 text-xs">{message}</p>
+                </div>
+              )}
   
-              {formMode === 'signup' && (
+              <form onSubmit={handleEmailLogin}>
                 <div className="mb-4">
-                  <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                  <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">Your Name (Optional)</label>
                   <input
                     id="name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    required
+                    placeholder="Enter your name"
                     className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#CC0000] text-sm text-black"
                   />
                 </div>
-              )}
   
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">BU Email Address</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="youremail@bu.edu"
-                  required
-                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#CC0000] text-sm text-black"
-                />
-                <p className="mt-1 text-xs text-gray-500">Please use your BU email address</p>
-              </div>
+                <div className="mb-6">
+                  <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">BU Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="youremail@bu.edu"
+                    required
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#CC0000] text-sm text-black"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Please use your BU email address</p>
+                </div>
   
-              <button 
-                onClick={handleBUAuth}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-[#A00000] text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
-              >
-                {loading ? (
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  formMode === 'login' ? 'Continue with BU Email' : 'Create Account with BU Email'
-                )}
-              </button>
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-[#CC0000] hover:bg-[#A00000] text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-colors"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    'Continue with BU Email'
+                  )}
+                </button>
+              </form>
             </div>
           </div>
   

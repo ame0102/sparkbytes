@@ -20,10 +20,11 @@ export default function ProfilePage() {
     name: "",
     email: "",
     bio: "",
-
   });
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [endingEventId, setEndingEventId] = useState<string | null>(null);
 
@@ -33,7 +34,7 @@ export default function ProfilePage() {
   const [filterMode, setFilterMode] = useState<"active" | "all">("active");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [sortMode, setSortMode] = useState<"recent" | "ongoing" | "past">("recent");
+  const [sortMode, setSortMode] = useState<"recent" | "past">("recent");
   
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,22 +42,129 @@ export default function ProfilePage() {
 
   // fetch user data
   useEffect(() => {
-    (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+    fetchProfile();
+  }, [router]);
+
+  // Enhanced fetch profile function with better name handling
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true);
+      setProfileError("");
+
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
         router.push("/login");
         return;
       }
-      setUser(user);
-      setFormData({
-        name: user.user_metadata?.name ?? "",
-        email: user.email ?? "",
-        bio: user.user_metadata?.bio ?? "",
+
+      console.log('Current user:', user.id);
+      console.log('User metadata:', user.user_metadata);
+
+      // Get profile data from Supabase
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      // Get the most current name (prioritize metadata over profile)
+      const metadataName = user.user_metadata?.name as string | undefined;
+      const profileName = profileData?.name;
+      const emailPrefix = user.email ? user.email.split('@')[0] : '';
+      
+      // Use metadata name if available, then profile name, then email prefix
+      const currentName = metadataName || profileName || emailPrefix;
+      
+      console.log('Name sources:', { 
+        metadataName, 
+        profileName, 
+        emailPrefix, 
+        chosen: currentName 
       });
-    })();
-  }, [router]);
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        
+        // If profile not found, create one
+        if (profileError.code === 'PGRST116') {
+          console.log('Profile not found, creating one...');
+          
+          const { error: upsertError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: user.id,
+              name: currentName,
+              email: user.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, { 
+              onConflict: 'id' 
+            });
+          
+          if (upsertError) {
+            console.error('Error creating profile:', upsertError);
+            throw new Error('Failed to create profile: ' + upsertError.message);
+          }
+          
+          // Set user data
+          setUser(user);
+          
+          // Set form data
+          setFormData({
+            name: currentName,
+            email: user.email || '',
+            bio: user.user_metadata?.bio || '',
+          });
+          
+          return;
+        } else {
+          throw new Error('Failed to load profile: ' + profileError.message);
+        }
+      }
+
+      console.log('Profile loaded:', profileData);
+      
+      // Check if the profile name is different from metadata name
+      // If so, update the profile to match metadata
+      if (metadataName && profileName !== metadataName) {
+        console.log(`Updating profile name from "${profileName}" to "${metadataName}"`);
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            name: metadataName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        if (updateError) {
+          console.error('Error updating profile name:', updateError);
+        } else {
+          // Update the profile data with the new name
+          profileData.name = metadataName;
+        }
+      }
+      
+      setUser(user);
+      
+      // Initialize form data with the most current name
+      setFormData({
+        name: currentName,
+        email: user.email || '',
+        bio: profileData?.bio || user.user_metadata?.bio || '',
+      });
+      
+    } catch (err) {
+      console.error('Error in fetchProfile:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load profile';
+      setProfileError(errorMessage);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   // fetch events
   useEffect(() => {
@@ -73,21 +181,101 @@ export default function ProfilePage() {
     })();
   }, [user]);
 
-  // save profile
+  // Update profile name function
+  const updateProfileName = async (newName: string) => {
+    if (!user) return false;
+    
+    console.log(`Updating name from "${formData.name}" to "${newName}"`);
+    
+    try {
+      // Update user metadata first
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { 
+          name: newName 
+        }
+      });
+      
+      if (metadataError) {
+        console.error('Error updating user metadata:', metadataError);
+        throw metadataError;
+      }
+      
+      console.log('User metadata updated with name:', newName);
+      
+      // Then update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: newName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+        throw profileError;
+      }
+      
+      console.log('Profile updated with name:', newName);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      return false;
+    }
+  };
+
+  // save profile with improved name handling
   const handleSave = async () => {
     if (!formData.name.trim()) {
       alert("Name is required");
       return;
     }
+    
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { ...formData },
-    });
-    setSaving(false);
-    if (error) {
-      alert("Update failed");
-    } else {
+    
+    try {
+      // Update name first
+      const nameUpdateSuccess = await updateProfileName(formData.name);
+      
+      if (!nameUpdateSuccess) {
+        throw new Error("Failed to update name");
+      }
+      
+      // Update other profile fields
+      const { error: bioUpdateError } = await supabase
+        .from('profiles')
+        .update({
+          bio: formData.bio,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (bioUpdateError) {
+        throw bioUpdateError;
+      }
+      
+      // Also update metadata
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { 
+          bio: formData.bio 
+        }
+      });
+      
+      if (metadataError) {
+        console.error('Error updating metadata:', metadataError);
+      }
+      
       setIsEditing(false);
+      
+      // Refresh profile to ensure we have the latest data
+      await fetchProfile();
+      
+    } catch (error) {
+      console.error('Profile update error:', error);
+      alert("Update failed: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -100,9 +288,15 @@ export default function ProfilePage() {
   const handleEndEvent = async () => {
     if (!endingEventId) return;
   
+    // Use 24-hour format for time when updating event status
     const { error } = await supabase
       .from("events")
-      .update({ ended: true })
+      .update({ 
+        ended: true,
+        // The line below ensures the time field remains in the correct format
+        // This prevents issues with the PostgreSQL interval conversions
+        time: dayjs().format("HH:mm:ss") 
+      })
       .eq("id", endingEventId);
   
     if (!error) {
@@ -111,33 +305,40 @@ export default function ProfilePage() {
           ev.id === endingEventId ? { ...ev, ended: true } : ev
         )
       );
+      console.log("Event marked as ended successfully");
+    } else {
+      console.error("Error ending event:", error);
     }
   
     setEndingEventId(null);
   };  
 
   const now = dayjs();
+  
+  // Check if a date is today or in the future (for active events)
+  const isActiveDate = (dateStr: string) => {
+    const today = dayjs().startOf('day');
+    const eventDate = dayjs(dateStr).startOf('day');
+    return eventDate.isSame(today) || eventDate.isAfter(today);
+  };
 
   // Filter events based on current filter and sort modes
   const filteredEvents = myEvents.filter(ev => {
     if (filterMode === "all") return true;
-    return dayjs(ev.date).isBefore(now) && !ev.ended;
+    // Show only non-ended events from today and future dates
+    return isActiveDate(ev.date) && !ev.ended;
   }).sort((a, b) => {
+    // Parse dates with proper format
+    const aDate = dayjs(a.date);
+    const bDate = dayjs(b.date);
+    
     // Sort based on sort mode
     if (sortMode === "recent") {
-      return dayjs(b.date).unix() - dayjs(a.date).unix(); // newest first
-    } else if (sortMode === "ongoing") {
-      const aIsOngoing = dayjs(a.date).isBefore(now) && !a.ended;
-      const bIsOngoing = dayjs(b.date).isBefore(now) && !b.ended;
-      if (aIsOngoing && !bIsOngoing) return -1;
-      if (!aIsOngoing && bIsOngoing) return 1;
-      return dayjs(a.date).unix() - dayjs(b.date).unix();
+      // Newest first
+      return bDate.valueOf() - aDate.valueOf();
     } else if (sortMode === "past") {
-      const aIsPast = a.ended || dayjs(a.date).isBefore(now);
-      const bIsPast = b.ended || dayjs(b.date).isBefore(now);
-      if (aIsPast && !bIsPast) return -1;
-      if (!aIsPast && bIsPast) return 1;
-      return dayjs(b.date).unix() - dayjs(a.date).unix();
+      // Oldest first
+      return aDate.valueOf() - bDate.valueOf();
     }
     return 0;
   });
@@ -149,10 +350,29 @@ export default function ProfilePage() {
     currentPage * eventsPerPage
   );
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-red-200 border-t-[#CC0000] rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading…
+        <div className="bg-white p-8 rounded-xl shadow-md text-center">
+          <p className="text-gray-600 mb-4">You need to be logged in to view this page.</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="px-4 py-2 bg-[#CC0000] text-white rounded-lg"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
     );
   }
@@ -170,6 +390,13 @@ export default function ProfilePage() {
             <div className="w-24 h-24 mx-auto flex items-center justify-center rounded-full border-2 border-[#CC0000] bg-white -mt-12">
               <UserOutlined style={{ fontSize: 36, color: "#CC0000" }} />
             </div>
+
+            {/* Profile error message */}
+            {profileError && (
+              <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
+                {profileError}
+              </div>
+            )}
 
             {/* profile info */}
             {isEditing ? (
@@ -192,8 +419,6 @@ export default function ProfilePage() {
                   rows={3}
                   placeholder="Bio"
                 />
-    
-  
               </div>
             ) : (
               <div className="text-center space-y-2">
@@ -204,7 +429,6 @@ export default function ProfilePage() {
                 {formData.bio && (
                   <p className="text-gray-700">{formData.bio}</p>
                 )}
-
               </div>
             )}
 
@@ -255,13 +479,12 @@ export default function ProfilePage() {
                   >
                     <SortAscendingOutlined />
                     <span>
-                      {sortMode === "recent" ? "Recent" : 
-                       sortMode === "ongoing" ? "Ongoing" : "Past"}
+                      {sortMode === "recent" ? "Recent" : "Past"}
                     </span>
                   </button>
 
                   {sortDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
                       <button
                         onClick={() => { setSortMode("recent"); setSortDropdownOpen(false); setCurrentPage(1); }}
                         className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center space-x-2"
@@ -289,7 +512,7 @@ export default function ProfilePage() {
                   </button>
 
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
                       <button
                         onClick={() => { setFilterMode("active"); setDropdownOpen(false); setCurrentPage(1); }}
                         className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center space-x-2"
@@ -367,7 +590,7 @@ export default function ProfilePage() {
                               </div>
                               <div className="flex items-center text-gray-600">
                                 <ClockCircleOutlined className="mr-2" />
-                                <span>{ev.time}</span>
+                                <span>{dayjs('2000-01-01 ' + ev.time).format('h:mm A')}</span>
                               </div>
                               <div className="flex items-center text-gray-600">
                                 <EnvironmentOutlined className="mr-2" />

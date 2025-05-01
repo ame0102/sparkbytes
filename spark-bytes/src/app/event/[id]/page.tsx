@@ -1,15 +1,22 @@
 "use client";
+import React from "react";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getCommentsByEventId, getEventById, postComment } from "@/utils/eventApi";
 import NavBar from "@/components/NavBar";
 import dayjs from "dayjs";
-import { Spin, Input, Button, Avatar, Card, Divider, Typography, Space } from "antd";
+import Typography from 'antd/es/typography';
+
+import { Spin, Input, Button } from "antd";
+import Space from "antd/es/space";
+import Divider from "antd/es/divider";
+import Card from "antd/es/card";
+import Avatar from "antd/es/avatar";
 import { supabase } from "@/utils/supabaseClient";
 import { EnvironmentOutlined, UserOutlined, CommentOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 
-const { TextArea } = Input;
+import TextArea from "antd/es/input/TextArea";
 const { Title, Text, Paragraph } = Typography;
 
 export default function EventDetailPage() {
@@ -163,8 +170,8 @@ export default function EventDetailPage() {
                     alignItems: 'center', 
                     marginBottom: 4 
                   }}>
-                    <Text strong>{comment.user_email?.split('@')[0] || 'Anonymous'}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text strong>{comment.user_name}</Text>
+                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {dayjs(comment.created_at).format('MMM D, YYYY h:mm A')}
                     </Text>
                   </div>
@@ -327,22 +334,15 @@ export default function EventDetailPage() {
                   <Text type="secondary" style={{ fontSize: '14px', marginBottom: '4px', display: 'block' }}>
                     <UserOutlined style={{ marginRight: 8 }} />
                     <span style={{ fontWeight: 500 }}>Posted by:</span> {event.creator_name || (event.creator_email ? event.creator_email.split('@')[0] : 'Anonymous')}
-                    {creatorInfo && 
-                      <Button 
-                        type="link" 
-                        size="small" 
-                        onClick={() => router.push(`/profile/${creatorInfo.id}`)}
-                        style={{ padding: '0 0 0 8px', height: 'auto' }}
-                      >
-                        View Profile
-                      </Button>
-                    }
+                  
                   </Text>
                   
                   {/* Date and time */}
                   <Text style={{ fontSize: '15px', display: 'block', margin: '8px 0' }}>
-                    <strong>When:</strong> {dayjs(event.date).format("MMMM D, YYYY")} • {event.time}
-                  </Text>
+              <strong>When:</strong>{" "}
+              {dayjs(event.date).format("MMMM D, YYYY")} •{" "}
+              {dayjs(event.time, "HH:mm:ss").format("h:mm A")}
+            </Text>
                   
                   {/* Location */}
                   <Text style={{ fontSize: '15px', display: 'block', margin: '8px 0' }}>

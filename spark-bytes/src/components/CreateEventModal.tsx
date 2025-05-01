@@ -1,3 +1,8 @@
+
+
+
+
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -34,8 +39,6 @@ const dietaryOptions = [
 ];
 
 const locationOptions = ["East", "Central", "West", "South", "Fenway"];
-
-// Comprehensive list of Boston University Campus addresses
 const buAddresses = [
   // Main Administrative Buildings
   "1 Silber Way, Boston, MA 02215", // Boston University Admissions Building
@@ -171,24 +174,36 @@ const buAddresses = [
   "595 Commonwealth Avenue, Boston, MA 02215", // Rafik B. Hariri Building
 ];
 
+
+
+
+
+
 // Address Autocomplete Component with local BU campus data
-const BUAddressAutocomplete = ({ 
-  value, 
+interface BUAddressAutocompleteProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+const BUAddressAutocomplete: React.FC<BUAddressAutocompleteProps> = ({ 
+  value = "", 
   onChange, 
   placeholder, 
   className = ""
 }) => {
   const [inputValue, setInputValue] = useState(value || "");
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   useEffect(() => {
     if (value !== inputValue) {
       setInputValue(value || "");
     }
-  }, [value]);
+  }, [value, inputValue]);
 
-  const findMatches = (text) => {
+  const findMatches = (text: string) => {
     if (!text || text.length < 2) {
       return [];
     }
@@ -197,7 +212,7 @@ const BUAddressAutocomplete = ({
     return buAddresses.filter(address => address.match(regex));
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     onChange?.(newValue);
@@ -207,7 +222,7 @@ const BUAddressAutocomplete = ({
     setShowSuggestions(true);
   };
 
-  const handleSuggestionClick = (address) => {
+  const handleSuggestionClick = (address: string) => {
     setInputValue(address);
     onChange?.(address);
     setSuggestions([]);
@@ -246,14 +261,16 @@ const BUAddressAutocomplete = ({
   );
 };
 
-const CustomButton = (props: {
+interface CustomButtonProps {
   onClick?: () => void;
   type?: "primary" | "default" | "dashed" | "link" | "text";
   loading?: boolean;
   style?: React.CSSProperties;
   text: string;
   icon?: React.ReactNode;
-}) => (
+}
+
+const CustomButton: React.FC<CustomButtonProps> = (props) => (
   <Button
     onClick={props.onClick}
     type={props.type}
@@ -273,6 +290,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
+  const [addressValue, setAddressValue] = useState<string>("");
 
   useEffect(() => {
     if (isOpen) {
@@ -281,8 +299,15 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         time: dayjs().hour(17).minute(0),
         dietary: [],
       });
+      setAddressValue("");
     }
   }, [form, isOpen]);
+
+  // Update form field when address is selected
+  const handleAddressChange = (value: string) => {
+    setAddressValue(value);
+    form.setFieldsValue({ address: value });
+  };
 
   const handleSubmit = async () => {
     try {
@@ -295,13 +320,20 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
       const values = await form.validateFields();
 
+      // Ensure date is in YYYY-MM-DD format
+      const formattedDate = dayjs(values.date).format("YYYY-MM-DD");
+      
+      // Ensure time is in 24-hour format without AM/PM (HH:mm:ss)
+      // CRITICAL FIX: This is the important part that fixes the interval error
+      const formattedTime = dayjs(values.time).format("HH:mm:ss");
+
       const eventData = {
         title: values.title,
-        date: dayjs(values.date).format("MMMM D, YYYY"),
-        time: dayjs(values.time).format("h:mm a"),
+        date: formattedDate,
+        time: formattedTime, // Using 24-hour format for database consistency
         location: values.location,
         address: values.address,
-        room: values.room,
+        description: values.description,
         dietary: values.dietary,
         dietaryComment: values.dietaryComment || null,
         food: values.food,
@@ -313,6 +345,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       await createEvent(eventData);
       message.success("Event created successfully!");
       form.resetFields();
+      setAddressValue("");
       onEventCreated();
       onClose();
     } catch (err: any) {
@@ -323,229 +356,222 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     }
   };
 
-  const modalContent = (
-    <Form form={form} layout="vertical">
-      <FormItem
-        name="title"
-        label="Event Title"
-        rules={[{ required: true, message: "Please enter the event title" }]}
-      >
-        <Input placeholder="Enter event title" className="rounded-input" />
-      </FormItem>
-
-      <div style={{ display: "flex", gap: "20px" }}>
-        <FormItem
-          name="date"
-          label="Date"
-          style={{ flex: 1 }}
-          rules={[{ required: true, message: "Please select a date" }]}
-        >
-          <DatePicker style={{ width: "100%" }} className="rounded-input" />
-        </FormItem>
-
-        <FormItem
-          name="time"
-          label="Time"
-          style={{ flex: 1 }}
-          rules={[{ required: true, message: "Please select a time" }]}
-        >
-          <TimePicker format="h:mm a" style={{ width: "100%" }} className="rounded-input" />
-        </FormItem>
-      </div>
-
-      <FormItem
-        name="location"
-        label="Location"
-        rules={[{ required: true, message: "Please select a location" }]}
-      >
-        <Select placeholder="Select a location" className="rounded-select">
-          {locationOptions.map((loc) => (
-            <Option key={loc} value={loc}>
-              {loc}
-            </Option>
-          ))}
-        </Select>
-      </FormItem>
-
-      <FormItem
-        name="address"
-        label="Address"
-        rules={[{ required: true, message: "Please enter an address" }]}
-      >
-        <BUAddressAutocomplete 
-          placeholder="Start typing to search for a BU campus address"
-          className="address-input"
-        />
-      </FormItem>
-
-      <Form.Item name="room" label="Room/Unit" rules={[]}>
-        <Input placeholder="e.g. Room 210, Unit 2" />
-      </Form.Item>
-
-      <FormItem
-        name="dietary"
-        label="Dietary Options"
-        rules={[{ required: true, message: "Please select at least one option" }]}
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select dietary options"
-          value={selectedDietary}
-          className="rounded-select"
-          onChange={(value) => {
-            // If "None" is selected, override all other selections
-            if (value.includes("None")) {
-              setSelectedDietary(["None"]);
-              form.setFieldsValue({ dietary: ["None"] });
-            } else {
-              // Prevent "None" from being selected with others
-              const filtered = value.filter((v) => v !== "None");
-              setSelectedDietary(filtered);
-              form.setFieldsValue({ dietary: filtered });
-            }
-          }}
-        >
-          {dietaryOptions.map((option) => (
-            <Option
-              key={option}
-              value={option}
-              disabled={
-                (selectedDietary.includes("None") && option !== "None") ||
-                (option === "None" && selectedDietary.length > 0 && !selectedDietary.includes("None"))
-              }
-            >
-              {option}
-            </Option>
-          ))}
-        </Select>
-      </FormItem>
-
-      {selectedDietary.includes("Other") && (
-        <FormItem
-          name="dietaryComment"
-          label="Describe the 'Other' dietary restrictions"
-          rules={[{ required: true, message: "Please enter your dietary comments" }]}
-        >
-          <TextArea rows={2} placeholder="Describe your dietary restrictions" className="rounded-textarea" />
-        </FormItem>
-      )}
-
-      <FormItem
-        name="food"
-        label="Food Options"
-        rules={[{ required: true, message: "Please enter all food options" }]}
-      >
-        <TextArea rows={4} placeholder="Enter all food options" className="rounded-textarea" />
-      </FormItem>
-
-      <FormItem
-        name="portions"
-        label="Number of Portions"
-        rules={[
-          { required: true, message: "Please enter how many portions will be available" },
-          {
-            type: "number",
-            min: 1,
-            message: "Portions must be at least 1",
-          },
-        ]}
-      >
-        <InputNumber
-          min={1}
-          placeholder="e.g. 50"
-          style={{ width: "100%" }}
-          className="rounded-input"
-        />
-      </FormItem>
-
-      <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <CustomButton 
-          onClick={onClose} 
-          text="Cancel" 
-          style={{ borderRadius: "6px" }}
-        />
-        <CustomButton
-          type="primary"
-          loading={loading}
-          onClick={handleSubmit}
-          style={{ 
-            backgroundColor: "#CC0000", 
-            borderColor: "#CC0000", 
-            borderRadius: "6px",
-            boxShadow: "0 2px 0 rgba(0,0,0,0.045)" 
-          }}
-          text="Create Event"
-          icon={loading ? null : <span style={{ marginRight: "8px" }}>+</span>}
-        />
-      </div>
-    </Form>
-  );
-
-  return isOpen ? (
+  return (
     <Modal
       title={<div style={{ fontSize: "18px", fontWeight: 600 }}>Create New Event</div>}
-      visible={isOpen}
+      open={isOpen}
       onCancel={onClose}
       footer={null}
       width={600}
-      bodyStyle={{ padding: "24px" }}
+      styles={{ body: { padding: "24px" } }}
       style={{ borderRadius: "8px", overflow: "hidden" }}
     >
-      {modalContent}
-    </Modal>
-  ) : null;
-};
+      <Form form={form} layout="vertical">
+        <FormItem
+          name="title"
+          label="Event Title"
+          rules={[{ required: true, message: "Please enter the event title" }]}
+        >
+          <Input placeholder="Enter event title" className="rounded-input" />
+        </FormItem>
 
-// Add global styles 
-const globalStyles = `
-  .autocomplete-suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    z-index: 1500;
-  }
-  
-  .autocomplete-item {
-    padding: 10px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #f5f5f5;
-  }
-  
-  .autocomplete-item:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .autocomplete-item:last-child {
-    border-bottom: none;
-  }
-  
-  .rounded-input, .rounded-select, .rounded-textarea {
-    border-radius: 6px !important;
-  }
-  
-  .rounded-input:focus, .rounded-select:focus, .rounded-textarea:focus {
-    border-color: #CC0000 !important;
-    box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.2) !important;
-  }
-  
-  .ant-select-selector {
-    border-radius: 6px !important;
-  }
-  
-  .ant-modal-content {
-    border-radius: 8px !important;
-    overflow: hidden;
-  }
-`;
+        <div style={{ display: "flex", gap: "20px" }}>
+          <FormItem
+            name="date"
+            label="Date"
+            style={{ flex: 1 }}
+            rules={[{ required: true, message: "Please select a date" }]}
+          >
+            <DatePicker style={{ width: "100%" }} className="rounded-input" />
+          </FormItem>
+
+          <FormItem
+            name="time"
+            label="Time"
+            style={{ flex: 1 }}
+            rules={[{ required: true, message: "Please select a time" }]}
+          >
+            <TimePicker format="h:mm a" style={{ width: "100%" }} className="rounded-input" />
+          </FormItem>
+        </div>
+
+        <FormItem
+          name="location"
+          label="Location"
+          rules={[{ required: true, message: "Please select a location" }]}
+        >
+          <Select placeholder="Select a location" className="rounded-select">
+            {locationOptions.map((loc) => (
+              <Option key={loc} value={loc}>
+                {loc}
+              </Option>
+            ))}
+          </Select>
+        </FormItem>
+
+        <FormItem
+          name="address"
+          label="Address"
+          rules={[{ required: true, message: "Please enter an address" }]}
+        >
+          <BUAddressAutocomplete 
+            placeholder="Start typing to search for a BU campus address"
+            className="address-input"
+            value={addressValue}
+            onChange={handleAddressChange}
+          />
+        </FormItem>
+
+        <FormItem
+          name="dietary"
+          label="Dietary Options"
+          rules={[{ required: true, message: "Please select at least one option" }]}
+        >
+          <Select
+            mode="multiple"
+            placeholder="Select dietary options"
+            value={selectedDietary}
+            className="rounded-select"
+            onChange={(value: string[]) => {
+              // If "None" is selected, override all other selections
+              if (value.includes("None")) {
+                setSelectedDietary(["None"]);
+                form.setFieldsValue({ dietary: ["None"] as string[] });
+              } else {
+                // Prevent "None" from being selected with others
+                const filtered = value.filter((v) => v !== "None");
+                setSelectedDietary(filtered);
+                form.setFieldsValue({ dietary: filtered });
+              }
+            }}
+          >
+            {dietaryOptions.map((option) => (
+              <Option
+                key={option}
+                value={option}
+                disabled={
+                  (selectedDietary.includes("None") && option !== "None") ||
+                  (option === "None" && selectedDietary.length > 0 && !selectedDietary.includes("None"))
+                } as boolean
+              >
+                {option}
+              </Option>
+            ))}
+          </Select>
+        </FormItem>
+
+        {selectedDietary.includes("Other") && (
+          <FormItem
+            name="dietaryComment"
+            label="Describe the 'Other' dietary restrictions"
+            rules={[{ required: true, message: "Please enter your dietary comments" }]}
+          >
+            <TextArea rows={2} placeholder="Describe your dietary restrictions" className="rounded-textarea" />
+          </FormItem>
+        )}
+
+        <FormItem
+          name="food"
+          label="Food Availability"
+          rules={[{ required: true, message: "Please enter all food availability" }]}
+        >
+          <TextArea rows={4} placeholder="Enter all food availability" className="rounded-textarea" />
+        </FormItem>
+
+        <FormItem
+          name="portions"
+          label="Number of Portions"
+          rules={[
+            { required: true, message: "Please enter how many portions will be available" },
+            {
+              type: "number",
+              min: 1,
+              message: "Portions must be at least 1",
+            },
+          ]}
+        >
+          <InputNumber
+            min={1}
+            placeholder="e.g. 50"
+            style={{ width: "100%" }}
+            className="rounded-input"
+          />
+        </FormItem>
+
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          <CustomButton 
+            onClick={onClose} 
+            text="Cancel" 
+            style={{ borderRadius: "6px" }}
+          />
+          <CustomButton
+            type="primary"
+            loading={loading}
+            onClick={handleSubmit}
+            style={{ 
+              backgroundColor: "#CC0000", 
+              borderColor: "#CC0000", 
+              borderRadius: "6px",
+              boxShadow: "0 2px 0 rgba(0,0,0,0.045)" 
+            }}
+            text="Create Event"
+            icon={loading ? null : <span style={{ marginRight: "8px" }}>+</span>}
+          />
+        </div>
+      </Form>
+
+      <style jsx global>{`
+        .autocomplete-suggestions {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          max-height: 200px;
+          overflow-y: auto;
+          background: white;
+          border: 1px solid #eee;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          z-index: 1500;
+        }
+        
+        .autocomplete-item {
+          padding: 10px 12px;
+          cursor: pointer;
+          border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .autocomplete-item:hover {
+          background-color: #f9f9f9;
+        }
+        
+        .autocomplete-item:last-child {
+          border-bottom: none;
+        }
+        
+        .rounded-input, .rounded-select, .rounded-textarea {
+          border-radius: 6px !important;
+        }
+        
+        .rounded-input:focus, .rounded-select:focus, .rounded-textarea:focus {
+          border-color: #CC0000 !important;
+          box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.2) !important;
+        }
+        
+        .ant-select-selector {
+          border-radius: 6px !important;
+        }
+        
+        .ant-modal-content {
+          border-radius: 8px !important;
+          overflow: hidden;
+        }
+      `}</style>
+    </Modal>
+  );
+};
 
 export default CreateEventModal;

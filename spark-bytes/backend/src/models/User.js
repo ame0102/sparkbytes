@@ -22,8 +22,16 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      // Make password optional if using passwordless auth
+      return this.authMethod === 'password';
+    },
     minlength: 6
+  },
+  authMethod: {
+    type: String,
+    enum: ['password', 'magic_link', 'bu_sso'],
+    default: 'magic_link'
   },
   isVerified: {
     type: Boolean,
@@ -40,10 +48,10 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Hash password before saving
+// Hash password before saving (only if using password auth)
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
+  if (!this.isModified('password') || !this.password) return next();
+    
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -55,6 +63,7 @@ userSchema.pre('save', async function(next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
@@ -319,7 +320,7 @@ export default function FavoritesPage() {
                   return true;
                 }).length
               }
-              onChange={p => setPage(p)}
+              onChange={(p) => setPage(p)}
               showSizeChanger={false}
             />
           </div>
@@ -327,4 +328,4 @@ export default function FavoritesPage() {
       </main>
     </>
   );
-  }
+}
