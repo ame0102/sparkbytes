@@ -15,6 +15,8 @@ import Card from "antd/es/card";
 import Avatar from "antd/es/avatar";
 import { supabase } from "@/utils/supabaseClient";
 import { EnvironmentOutlined, UserOutlined, CommentOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { addFavorite, removeFavorite, getFavoriteEventIds } from "@/utils/eventApi";
+import { StarOutlined, StarFilled } from "@ant-design/icons";
 
 import TextArea from "antd/es/input/TextArea";
 const { Title, Text, Paragraph } = Typography;
@@ -29,6 +31,9 @@ export default function EventDetailPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  const [pulsing, setPulsing] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -103,6 +108,29 @@ export default function EventDetailPage() {
     fetchEventData();
   }, [id]);
 
+  const loadFavoriteStatus = async () => {
+    const favoriteIds = await getFavoriteEventIds();
+    setIsFavorite(favoriteIds.includes(id));
+  };
+  loadFavoriteStatus();
+  
+  const handleToggleFavorite = async () => {
+    if (!currentUser) return;
+  
+    setPulsing(true);
+    setTimeout(() => setPulsing(false), 400);
+  
+    setFavLoading(true);
+    if (isFavorite) {
+      await removeFavorite(id);
+      setIsFavorite(false);
+    } else {
+      await addFavorite(id);
+      setIsFavorite(true);
+    }
+    setFavLoading(false);
+  };  
+
   const handlePostComment = async (parentId: string | null = null) => {
     if (newComment.trim() === "") return;
     const posted = await postComment(id!, newComment, parentId);
@@ -141,6 +169,7 @@ export default function EventDetailPage() {
     const filtered = comments.filter(c => c.parent_id === parentId);
 
     return (
+      
       <div style={{ 
         marginLeft: level > 0 ? 24 : 0,
         borderLeft: level > 0 ? '2px solid #f0f0f0' : 'none',
@@ -189,7 +218,7 @@ export default function EventDetailPage() {
                       type="text"
                       size="small"
                       onClick={() => setReplyingTo(comment.id)}
-                      disabled={comment.deleted}
+                      disabled={comment.deleted || event.ended }
                       style={{ padding: '0', height: 'auto', fontSize: 13 }}
                     >
                       Reply
@@ -256,6 +285,16 @@ export default function EventDetailPage() {
     return (
       <>
         <NavBar />
+        <style>{`
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+          }
+          .pulse {
+            animation: pulse 0.4s ease;
+          }
+        `}</style>
         <div style={{ 
           display: 'flex', 
           justifyContent: 'center', 
@@ -320,6 +359,30 @@ export default function EventDetailPage() {
                   display: 'block'
                 }}
               />
+              <div
+                className={pulsing ? "pulse" : ""}
+                onClick={handleToggleFavorite}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  background: "white",
+                  borderRadius: "50%",
+                  padding: 8,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  zIndex: 2,
+                  cursor: "pointer",
+                  transition: "transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              >
+                {isFavorite ? (
+                  <StarFilled style={{ fontSize: 24, color: "#CC0000" }} />
+                ) : (
+                  <StarOutlined style={{ fontSize: 24, color: "#999" }} />
+                )}
+              </div>
             </div>
 
             <div style={{ padding: 24 }}>
@@ -437,10 +500,10 @@ export default function EventDetailPage() {
                 value={replyingTo ? "" : newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                disabled={replyingTo !== null}
+                disabled={replyingTo !== null || event.ended }
                 style={{ marginBottom: 12, borderRadius: 8 }}
               />
-              {!replyingTo && (
+              {!replyingTo && !event.ended && (
                 <Button
                   type="primary"
                   style={{ 
@@ -452,6 +515,12 @@ export default function EventDetailPage() {
                   Post Comment
                 </Button>
               )}
+
+              {event.ended && (
+                <Text type="secondary" italic>
+                  Commenting is closed because this event has ended.
+                </Text>
+              )}
             </div>
 
             <Divider style={{ margin: '8px 0 24px' }} />
@@ -460,13 +529,15 @@ export default function EventDetailPage() {
             {comments.length > 0 ? (
               renderComments()
             ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '24px 0', 
-                color: '#999' 
-              }}>
-                <Text type="secondary">Be the first to comment on this event!</Text>
-              </div>
+              !event.ended && (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '24px 0', 
+                  color: '#999' 
+                }}>
+                  <Text type="secondary">Be the first to comment on this event!</Text>
+                </div>
+              )
             )}
           </Card>
         </div>
